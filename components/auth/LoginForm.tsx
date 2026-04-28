@@ -1,31 +1,6 @@
-import { createSignal } from "solid-js";
-import { useAuth } from "../../contexts/AuthContext";
-
 export function LoginForm() {
-  const auth = useAuth();
-  const [username, setUsername] = createSignal("");
-  const [password, setPassword] = createSignal("");
-  const [error, setError] = createSignal("");
-  const [isLoading, setIsLoading] = createSignal(false);
-
-  const handleSubmit = async (e: Event) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    try {
-      await auth.login(username(), password());
-      // Redirect to home on successful login
-      window.location.href = "/";
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmit}>
+    <form action="/api/auth/login" method="post">
       <div style={{ "margin-bottom": "15px" }}>
         <label for="username" style={{ display: "block", "margin-bottom": "5px" }}>
           Username
@@ -33,9 +8,7 @@ export function LoginForm() {
         <input
           type="text"
           id="username"
-          value={username()}
-          onInput={(e) => setUsername(e.currentTarget.value)}
-          disabled={isLoading()}
+          name="username"
           style={{
             padding: "8px",
             width: "100%",
@@ -52,9 +25,7 @@ export function LoginForm() {
         <input
           type="password"
           id="password"
-          value={password()}
-          onInput={(e) => setPassword(e.currentTarget.value)}
-          disabled={isLoading()}
+          name="password"
           style={{
             padding: "8px",
             width: "100%",
@@ -64,34 +35,19 @@ export function LoginForm() {
         />
       </div>
 
-      {error() && (
-        <div
-          style={{
-            color: "red",
-            "margin-bottom": "15px",
-            padding: "10px",
-            "background-color": "#ffebee",
-            "border-radius": "4px",
-          }}
-        >
-          {error()}
-        </div>
-      )}
-
       <button
         type="submit"
-        disabled={isLoading()}
         style={{
           padding: "10px 20px",
-          "background-color": isLoading() ? "#ccc" : "#1976d2",
+          "background-color": "#1976d2",
           color: "white",
           border: "none",
           "border-radius": "4px",
-          cursor: isLoading() ? "not-allowed" : "pointer",
+          cursor: "pointer",
           width: "100%",
         }}
       >
-        {isLoading() ? "Logging in..." : "Login"}
+        Login
       </button>
     </form>
   );

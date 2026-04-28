@@ -19,8 +19,10 @@ async function delay(ms) {
 }
 
 async function testRegister() {
-  const proc = spawn('/home/n/.cache/lightpanda-node/lightpanda', 
-    ['serve', '--host', lpdopts.host, '--port', lpdopts.port]);
+  // Start Lightpanda with optional cookie file for faster subsequent runs
+  const args = ['serve', '--host', lpdopts.host, '--port', lpdopts.port];
+
+  const proc = spawn('/home/n/.cache/lightpanda-node/lightpanda', args);
   await delay(2000);
 
   const browser = await puppeteer.connect(puppeteeropts);
@@ -29,21 +31,21 @@ async function testRegister() {
 
   try {
     const testUsername = 'reguser_' + Date.now();
-    console.log('[Test] Register new user...');
-    
+    console.log('[Test] Register new user: ' + testUsername);
+
     await page.goto(`${BASE_URL}/register`);
     await page.waitForSelector('#reg-username');
-    
+
     await page.type('#reg-username', testUsername);
     await page.type('#reg-password', 'testpass123');
     await page.type('#confirm-password', 'testpass123');
-    
+
     await page.click('button[type="submit"]');
-    
+
     // Wait for registration and redirect to login
     await page.waitForNavigation();
     const url = page.url();
-    
+
     if (url === `${BASE_URL}/login?registered=true`) {
       console.log('✓ Register successful, redirected to login');
     } else {

@@ -4,7 +4,11 @@
     "build": "vike build",
     "preview": "vike build && vike preview",
     "sqlite:migrate": "tsx ./database/sqlite/schema/all.ts",
-    "prod": "vike build && node ./dist/server/index.mjs"
+    "prod": "vike build && node ./dist/server/index.mjs",
+    "test:e2e": "node e2e/run-tests.js",
+    "test:e2e:serial": "node e2e/run-tests.js --serial",
+    "test:e2e:register": "node e2e/test-register.js",
+    "test:e2e:login": "node e2e/test-login.js"
   },
   "dependencies": {
     "@fastify/formbody": "^8.0.2",

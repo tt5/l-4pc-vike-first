@@ -17,8 +17,22 @@ function jsonResponse(data: unknown, status = 200) {
 export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSync }> = enhance(
   async (request, context, _runtime) => {
     try {
-      const requestData = await request.json() as { username: string; password: string };
-      const { username, password } = requestData;
+      let username: string;
+      let password: string;
+
+      // Handle both JSON and form-data requests
+      const contentType = request.headers.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        const requestData = await request.json() as { username: string; password: string };
+        username = requestData.username;
+        password = requestData.password;
+      } else {
+        // Handle form-data (traditional HTML form submission)
+        const formData = await request.formData();
+        username = formData.get("username") as string;
+        password = formData.get("password") as string;
+      }
 
       if (!username || !password) {
         return jsonResponse({ error: "Username and password are required" }, 400);
@@ -29,42 +43,53 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
         | { id: string; username: string }
         | undefined;
 
+      let token: string;
+      let userId: string;
+
       if (!user) {
         // For development, create the user if it doesn't exist
         if (process.env.NODE_ENV !== "production") {
-          const userId = `user_${randomBytes(16).toString("hex")}`;
+          userId = `user_${randomBytes(16).toString("hex")}`;
           context.db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)").run(
             userId,
             username,
             password
           );
-          
-          const token = generateToken({
-            userId: userId,
-            username: username,
-          });
-
-          return jsonResponse({
-            user: {
-              id: userId,
-              username: username,
-              token: token,
-            },
-          }, 200);
         } else {
+          // For form submissions, redirect back to login with error
+          if (!contentType.includes("application/json")) {
+            return new Response(null, {
+              status: 302,
+              headers: { "Location": "/login?error=invalid" },
+            });
+          }
           return jsonResponse({ error: "Invalid credentials" }, 401);
         }
+      } else {
+        userId = user.id;
       }
 
-      const token = generateToken({
-        userId: user.id,
-        username: user.username,
+      token = generateToken({
+        userId: userId,
+        username: username,
       });
 
+      // For form-data requests (traditional HTML form), redirect to dashboard with cookie
+      if (!contentType.includes("application/json")) {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            "Location": "/dashboard",
+            "Set-Cookie": `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax`,
+          },
+        });
+      }
+
+      // For JSON requests, return JSON response
       return jsonResponse({
         user: {
-          id: user.id,
-          username: user.username,
+          id: userId,
+          username: username,
           token: token,
         },
       }, 200);
