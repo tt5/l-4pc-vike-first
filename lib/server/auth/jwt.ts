@@ -35,12 +35,10 @@ export function verifyToken(token: string): TokenPayload | null {
 }
 
 export function getTokenFromRequest(request: Request): string | null {
-  // Only accept Authorization header - JWT-only auth
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.split(' ')[1];
   }
-
   return null;
 }
 
