@@ -18,6 +18,9 @@ async function getHandler() {
   // /!\ Mandatory if you need to access the request body in any Universal Middleware or Handler
   await app.register(rawBody);
 
+  // Add support for form-data parsing
+  await app.register(import('@fastify/formbody'));
+
   await vike(app, [
     // Make database available in Context as `context.db`
     dbMiddleware,

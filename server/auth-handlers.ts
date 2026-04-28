@@ -80,8 +80,22 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
 export const registerHandler: UniversalHandler<Universal.Context & { db: DatabaseSync }> = enhance(
   async (request, context, _runtime) => {
     try {
-      const requestData = await request.json() as { username: string; password: string };
-      const { username, password } = requestData;
+      let username: string;
+      let password: string;
+      
+      // Handle both JSON and form-data requests
+      const contentType = request.headers.get("content-type") || "";
+      
+      if (contentType.includes("application/json")) {
+        const requestData = await request.json() as { username: string; password: string };
+        username = requestData.username;
+        password = requestData.password;
+      } else {
+        // Handle form-data (traditional HTML form submission)
+        const formData = await request.formData();
+        username = formData.get("username") as string;
+        password = formData.get("password") as string;
+      }
 
       if (!username || !password) {
         return jsonResponse({ error: "Username and password are required" }, 400);
@@ -107,6 +121,18 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: Databas
         username: username,
       });
 
+      // For form-data requests (traditional HTML form), redirect to login
+      if (!contentType.includes("application/json")) {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            "Location": "/login?registered=true",
+            "Set-Cookie": `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax`,
+          },
+        });
+      }
+
+      // For JSON requests, return JSON response
       return jsonResponse({
         user: {
           id: userId,

@@ -12,7 +12,7 @@ const puppeteeropts = {
   browserWSEndpoint: `ws://${lpdopts.host}:${lpdopts.port}`,
 };
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3002';
 
 async function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
@@ -31,29 +31,23 @@ async function testRegister() {
     const testUsername = 'reguser_' + Date.now();
     console.log('[Test] Register new user...');
     
-    await page.goto(`${BASE_URL}/login`);
-    await page.waitForSelector('#username');
-    
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const registerBtn = buttons.find(b => b.textContent?.includes('Register'));
-      registerBtn?.click();
-    });
-    await delay(200);
+    await page.goto(`${BASE_URL}/register`);
     await page.waitForSelector('#reg-username');
     
     await page.type('#reg-username', testUsername);
     await page.type('#reg-password', 'testpass123');
     await page.type('#confirm-password', 'testpass123');
+    
     await page.click('button[type="submit"]');
     
+    // Wait for registration and redirect to login
     await page.waitForNavigation();
     const url = page.url();
     
-    if (url === `${BASE_URL}/`) {
-      console.log('✓ Register successful, redirected to home');
+    if (url === `${BASE_URL}/login?registered=true`) {
+      console.log('✓ Register successful, redirected to login');
     } else {
-      console.log('✗ Expected redirect to /, got:', url);
+      console.log('✗ Expected redirect to /login?registered=true, got:', url);
       process.exitCode = 1;
     }
   } catch (error) {

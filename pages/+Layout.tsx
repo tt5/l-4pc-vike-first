@@ -21,6 +21,7 @@ export default function Layout(props: { children?: JSX.Element }) {
           <Logo />
           <Link href="/">Home</Link>
           <Link href="/login">Login</Link>
+          <Link href="/register">Register</Link>
           <Link href="/dashboard">Dashboard</Link>
         </Sidebar>
         <Content>{props.children}</Content>
