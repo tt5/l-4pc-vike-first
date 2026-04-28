@@ -1,9 +1,12 @@
-import { requireAuth } from "../../server/auth-middleware";
+interface PageProps {
+  user: {
+    userId: string;
+    username: string;
+    role?: 'admin' | 'user';
+  };
+}
 
-// This page is protected - requireAuth will throw if user is not authenticated
-export default function Page() {
-  const user = requireAuth();
-
+export default function Page({ user }: PageProps) {
   return (
     <>
       <h1>Dashboard (Protected)</h1>
@@ -17,7 +20,7 @@ export default function Page() {
       >
         <h2>Welcome, {user.username}!</h2>
         <p>This is a protected route. You can only see this because you're authenticated.</p>
-        <p>User ID: {user.id}</p>
+        <p>User ID: {user.userId}</p>
       </div>
     </>
   );

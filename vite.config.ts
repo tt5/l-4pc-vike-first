@@ -6,4 +6,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [vike(), vikeSolid()],
+  ssr: {
+    external: ['jsonwebtoken'],
+  },
 });
