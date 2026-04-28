@@ -47,27 +47,17 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
       let userId: string;
 
       if (!user) {
-        // For development, create the user if it doesn't exist
-        if (process.env.NODE_ENV !== "production") {
-          userId = `user_${randomBytes(16).toString("hex")}`;
-          context.db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)").run(
-            userId,
-            username,
-            password
-          );
-        } else {
-          // For form submissions, redirect back to login with error
-          if (!contentType.includes("application/json")) {
-            return new Response(null, {
-              status: 302,
-              headers: { "Location": "/login?error=invalid" },
-            });
-          }
-          return jsonResponse({ error: "Invalid credentials" }, 401);
+        // For form submissions, redirect back to login with error
+        if (!contentType.includes("application/json")) {
+          return new Response(null, {
+            status: 302,
+            headers: { "Location": "/login?error=invalid" },
+          });
         }
-      } else {
-        userId = user.id;
+        return jsonResponse({ error: "Invalid credentials" }, 401);
       }
+
+      userId = user.id;
 
       token = generateToken({
         userId: userId,
