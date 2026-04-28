@@ -38,7 +38,7 @@ async function runAuthTests() {
       const registerBtn = buttons.find(b => b.textContent?.includes('Register'));
       registerBtn?.click();
     });
-    await page.waitForTimeout(100);
+    await new Promise(r => setTimeout(r, 100));
     
     await page.type('#username', testUsername);
     await page.type('#password', 'testpass123');
