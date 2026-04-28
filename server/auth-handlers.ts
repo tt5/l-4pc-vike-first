@@ -20,19 +20,10 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
       let username: string;
       let password: string;
 
-      // Handle both JSON and form-data requests
-      const contentType = request.headers.get("content-type") || "";
-
-      if (contentType.includes("application/json")) {
-        const requestData = await request.json() as { username: string; password: string };
-        username = requestData.username;
-        password = requestData.password;
-      } else {
-        // Handle form-data (traditional HTML form submission)
-        const formData = await request.formData();
-        username = formData.get("username") as string;
-        password = formData.get("password") as string;
-      }
+      // Handle form-data (traditional HTML form submission)
+      const formData = await request.formData();
+      username = formData.get("username") as string;
+      password = formData.get("password") as string;
 
       if (!username || !password) {
         return jsonResponse({ error: "Username and password are required" }, 400);
@@ -47,14 +38,11 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
       let userId: string;
 
       if (!user) {
-        // For form submissions, redirect back to login with error
-        if (!contentType.includes("application/json")) {
-          return new Response(null, {
-            status: 302,
-            headers: { "Location": "/login?error=invalid" },
-          });
-        }
-        return jsonResponse({ error: "Invalid credentials" }, 401);
+        // Redirect back to login with error
+        return new Response(null, {
+          status: 302,
+          headers: { "Location": "/login?error=invalid" },
+        });
       }
 
       userId = user.id;
@@ -64,25 +52,14 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
         username: username,
       });
 
-      // For form-data requests (traditional HTML form), redirect to login page with cookie
-      if (!contentType.includes("application/json")) {
-        return new Response(null, {
-          status: 302,
-          headers: {
-            "Location": "/login?login=true",
-            "Set-Cookie": `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax`,
-          },
-        });
-      }
-
-      // For JSON requests, return JSON response
-      return jsonResponse({
-        user: {
-          id: userId,
-          username: username,
-          token: token,
+      // Redirect to login page with cookie
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": "/login?login=true",
+          "Set-Cookie": `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax`,
         },
-      }, 200);
+      });
     } catch (error) {
       console.error("Login error:", error);
       return jsonResponse({ error: "Failed to log in" }, 500);
@@ -98,19 +75,10 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: Databas
       let username: string;
       let password: string;
       
-      // Handle both JSON and form-data requests
-      const contentType = request.headers.get("content-type") || "";
-      
-      if (contentType.includes("application/json")) {
-        const requestData = await request.json() as { username: string; password: string };
-        username = requestData.username;
-        password = requestData.password;
-      } else {
-        // Handle form-data (traditional HTML form submission)
-        const formData = await request.formData();
-        username = formData.get("username") as string;
-        password = formData.get("password") as string;
-      }
+      // Handle form-data (traditional HTML form submission)
+      const formData = await request.formData();
+      username = formData.get("username") as string;
+      password = formData.get("password") as string;
 
       if (!username || !password) {
         return jsonResponse({ error: "Username and password are required" }, 400);
@@ -136,25 +104,14 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: Databas
         username: username,
       });
 
-      // For form-data requests (traditional HTML form), redirect to login
-      if (!contentType.includes("application/json")) {
-        return new Response(null, {
-          status: 302,
-          headers: {
-            "Location": "/login?registered=true",
-            "Set-Cookie": `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax`,
-          },
-        });
-      }
-
-      // For JSON requests, return JSON response
-      return jsonResponse({
-        user: {
-          id: userId,
-          username: username,
-          token: token,
+      // Redirect to login page with cookie
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": "/login?registered=true",
+          "Set-Cookie": `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax`,
         },
-      }, 201);
+      });
     } catch (error) {
       console.error("Registration error:", error);
       return jsonResponse({ error: "Failed to register user" }, 500);
