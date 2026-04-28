@@ -25,6 +25,7 @@ export function UserInfo() {
 
   return (
     <div
+      data-testid="user-info"
       style={{
         padding: "10px",
         "background-color": "#e3f2fd",
@@ -39,6 +40,7 @@ export function UserInfo() {
         <strong>Logged in as:</strong> {user()?.username}
       </span>
       <button
+        data-testid="logout"
         onClick={handleLogout}
         style={{
           padding: "5px 15px",
