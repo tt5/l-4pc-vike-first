@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20.19.37",
+    "@types/node": "^22.15.14",
     "puppeteer-core": "^22.15.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
