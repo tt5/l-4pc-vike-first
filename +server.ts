@@ -1,0 +1,36 @@
+import "dotenv/config";
+import { dbMiddleware } from "./server/db-middleware";
+import { createTodoHandler } from "./server/create-todo-handler";
+import vike, { toFetchHandler } from "@vikejs/fastify";
+import fastify from "fastify";
+import rawBody from "fastify-raw-body";
+import type { Server } from "vike/types";
+
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+async function getHandler() {
+  const app = fastify({
+    // Ensures proper HMR support
+    forceCloseConnections: true,
+  });
+
+  // /!\ Mandatory if you need to access the request body in any Universal Middleware or Handler
+  await app.register(rawBody);
+
+  await vike(app, [
+    // Make database available in Context as `context.db`
+    dbMiddleware,
+
+    createTodoHandler,
+  ]);
+
+  await app.ready();
+
+  return toFetchHandler(app.routing.bind(app));
+}
+
+// https://vike.dev/server
+export default {
+  fetch: await getHandler(),
+  prod: { port },
+} as Server;
