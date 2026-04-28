@@ -12,7 +12,7 @@ const puppeteeropts = {
   browserWSEndpoint: `ws://${lpdopts.host}:${lpdopts.port}`,
 };
 
-const BASE_URL = 'http://localhost:3002';
+const BASE_URL = 'http://localhost:3000';
 
 async function delay(ms) {
   return new Promise(r => setTimeout(r, ms));

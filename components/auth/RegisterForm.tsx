@@ -1,6 +1,6 @@
 export function RegisterForm() {
   return (
-    <form action="/api/auth/register" method="POST">
+    <form action="/api/auth/register" method="post">
       <div style={{ "margin-bottom": "15px" }}>
         <label for="reg-username" style={{ display: "block", "margin-bottom": "5px" }}>
           Username
