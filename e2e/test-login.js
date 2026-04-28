@@ -30,7 +30,7 @@ async function testLogin() {
   const page = await context.newPage();
 
   try {
-    const testUsername = 'testuser';
+    const testUsername = 'testuser1';
     console.log('[Test] Login with user: ' + testUsername);
 
     await page.goto(`${BASE_URL}/login`);
@@ -41,14 +41,14 @@ async function testLogin() {
 
     await page.click('button[type="submit"]');
 
-    // Wait for login and redirect to dashboard
+    // Wait for login and redirect
     await page.waitForNavigation();
     const url = page.url();
 
-    if (url === `${BASE_URL}/dashboard`) {
-      console.log('✓ Login successful, redirected to dashboard');
+    if (url === `${BASE_URL}/login?login=true`) {
+      console.log('✓ Login successful, redirected to login page');
     } else {
-      console.log('✗ Expected redirect to /dashboard, got:', url);
+      console.log('✗ Expected redirect to /login?login=true, got:', url);
       process.exitCode = 1;
     }
   } catch (error) {

@@ -64,12 +64,12 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
         username: username,
       });
 
-      // For form-data requests (traditional HTML form), redirect to dashboard with cookie
+      // For form-data requests (traditional HTML form), redirect to login page with cookie
       if (!contentType.includes("application/json")) {
         return new Response(null, {
           status: 302,
           headers: {
-            "Location": "/dashboard",
+            "Location": "/login?login=true",
             "Set-Cookie": `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax`,
           },
         });

@@ -30,7 +30,7 @@ async function testRegister() {
   const page = await context.newPage();
 
   try {
-    const testUsername = 'reguser_' + Date.now();
+    const testUsername = 'testuser1';
     console.log('[Test] Register new user: ' + testUsername);
 
     await page.goto(`${BASE_URL}/register`);
