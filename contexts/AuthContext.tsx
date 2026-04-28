@@ -12,6 +12,7 @@ interface AuthStore {
   user: () => NullableUser;
   login: (username: string, password: string) => Promise<NullableUser>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   isInitialized: () => boolean;
   getToken: () => string | null;
   updateUser: (userData: User | null) => void;
@@ -191,10 +192,39 @@ const createAuthStore = (): AuthStore => {
     return currentUser?.token || null;
   };
 
+  const deleteAccount = async () => {
+    try {
+      const token = getToken();
+      
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await makeApiCall(
+        "/api/auth/delete",
+        {
+          method: "DELETE",
+          body: JSON.stringify({}),
+        },
+        token
+      );
+
+      await parseApiResponse(response, "delete-account");
+      
+      // Clear user data and redirect
+      updateUser(null);
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Delete account error:", error);
+      throw error;
+    }
+  };
+
   return {
     user,
     login,
     logout,
+    deleteAccount,
     isInitialized,
     getToken,
     updateUser,

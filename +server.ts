@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { dbMiddleware } from "./server/db-middleware";
 import { authMiddleware } from "./server/auth-middleware";
-import { loginHandler, registerHandler, logoutHandler, verifyHandler } from "./server/auth-handlers";
+import { loginHandler, registerHandler, logoutHandler, verifyHandler, deleteHandler } from "./server/auth-handlers";
 import vike, { toFetchHandler } from "@vikejs/fastify";
 import fastify from "fastify";
 import rawBody from "fastify-raw-body";
@@ -29,6 +29,7 @@ async function getHandler() {
     registerHandler,
     logoutHandler,
     verifyHandler,
+    deleteHandler,
 
   ]);
 

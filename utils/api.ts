@@ -5,9 +5,13 @@ export async function makeApiCall(
   token?: string | null
 ): Promise<Response> {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
   };
+
+  // Only set Content-Type for requests that have a body
+  if (options.body || (options.method && options.method !== 'GET' && options.method !== 'DELETE')) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;

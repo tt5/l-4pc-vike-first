@@ -166,3 +166,32 @@ export const verifyHandler: UniversalHandler<Universal.Context> = enhance(
   },
   { name: "my-app:auth-verify", path: "/api/auth/verify", method: "GET", immutable: false },
 );
+
+// DELETE /api/auth/delete - Delete current user account
+export const deleteHandler: UniversalHandler<Universal.Context & { db: DatabaseSync }> = enhance(
+  async (request, context, _runtime) => {
+    try {
+      const user = await getAuthUser(request);
+      
+      if (!user) {
+        return jsonResponse({ error: "Authentication required" }, 401);
+      }
+
+      // Delete user from database
+      const result = context.db.prepare("DELETE FROM users WHERE id = ?").run(user.userId);
+      
+      if (result.changes === 0) {
+        return jsonResponse({ error: "User not found" }, 404);
+      }
+
+      return jsonResponse({ 
+        success: true, 
+        message: "User deleted successfully" 
+      });
+    } catch (error) {
+      console.error("Delete user error:", error);
+      return jsonResponse({ error: "Failed to delete user" }, 500);
+    }
+  },
+  { name: "my-app:auth-delete", path: "/api/auth/delete", method: "DELETE", immutable: false },
+);
