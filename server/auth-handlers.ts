@@ -1,4 +1,4 @@
-import type { db as sqliteDb } from "../database/sqlite/db";
+import type { DatabaseSync } from "node:sqlite";
 import { enhance, type UniversalHandler } from "@universal-middleware/core";
 import { generateToken, getAuthUser, getTokenFromRequest, type TokenPayload } from "../lib/server/auth/jwt";
 import { randomBytes } from "crypto";
@@ -14,7 +14,7 @@ function jsonResponse(data: unknown, status = 200) {
 }
 
 // POST /api/auth/login - Authenticate user and return JWT token
-export const loginHandler: UniversalHandler<Universal.Context & { db: ReturnType<typeof sqliteDb> }> = enhance(
+export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSync }> = enhance(
   async (request, context, _runtime) => {
     try {
       const requestData = await request.json() as { username: string; password: string };
@@ -25,18 +25,18 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: ReturnType
       }
 
       // Check if user exists
-      const user = context.db.get<{ id: string; username: string }>(
-        "SELECT id, username FROM users WHERE username = ?",
-        [username]
-      );
+      const user = context.db.prepare("SELECT id, username FROM users WHERE username = ?").get(username) as
+        | { id: string; username: string }
+        | undefined;
 
       if (!user) {
         // For development, create the user if it doesn't exist
         if (process.env.NODE_ENV !== "production") {
           const userId = `user_${randomBytes(16).toString("hex")}`;
-          context.db.run(
-            "INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)",
-            [userId, username, password]
+          context.db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)").run(
+            userId,
+            username,
+            password
           );
           
           const token = generateToken({
@@ -77,7 +77,7 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: ReturnType
 );
 
 // POST /api/auth/register - Register new user
-export const registerHandler: UniversalHandler<Universal.Context & { db: ReturnType<typeof sqliteDb> }> = enhance(
+export const registerHandler: UniversalHandler<Universal.Context & { db: DatabaseSync }> = enhance(
   async (request, context, _runtime) => {
     try {
       const requestData = await request.json() as { username: string; password: string };
@@ -88,10 +88,7 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: ReturnT
       }
 
       // Check if user already exists
-      const existingUser = context.db.get(
-        "SELECT id FROM users WHERE username = ?",
-        [username]
-      );
+      const existingUser = context.db.prepare("SELECT id FROM users WHERE username = ?").get(username);
 
       if (existingUser) {
         return jsonResponse({ error: "Username already exists" }, 400);
@@ -99,9 +96,10 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: ReturnT
 
       const userId = `user_${randomBytes(16).toString("hex")}`;
 
-      context.db.run(
-        "INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)",
-        [userId, username, password]
+      context.db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)").run(
+        userId,
+        username,
+        password
       );
 
       const token = generateToken({

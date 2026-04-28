@@ -1,9 +1,9 @@
-import type { db as sqliteDb } from "./database/sqlite/db";
+import type { DatabaseSync } from "node:sqlite";
 
 declare global {
   namespace Vike {
     interface PageContextServer {
-      db: ReturnType<typeof sqliteDb>;
+      db: DatabaseSync;
     }
   }
 }

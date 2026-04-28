@@ -1,14 +1,14 @@
-import sqlite, { type Database } from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 
-let singleton: Database | undefined;
+let singleton: DatabaseSync | undefined;
 
-export function db(): Database {
+export function db(): DatabaseSync {
   if (!singleton) {
     if (!process.env.DATABASE_URL) {
       throw new Error("Missing DATABASE_URL in .env file");
     }
 
-    singleton = sqlite(process.env.DATABASE_URL);
+    singleton = new DatabaseSync(process.env.DATABASE_URL);
   }
   return singleton;
 }

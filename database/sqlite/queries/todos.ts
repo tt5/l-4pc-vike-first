@@ -1,9 +1,9 @@
-import type { Database } from "better-sqlite3";
+import type { DatabaseSync } from "node:sqlite";
 
-export function insertTodo(db: Database, text: string) {
+export function insertTodo(db: DatabaseSync, text: string) {
   return db.prepare("INSERT INTO todos (text) VALUES (?)").run(text);
 }
 
-export function getAllTodos(db: Database) {
-  return db.prepare<[], { id: number; text: string }>("SELECT * FROM todos").all();
+export function getAllTodos(db: DatabaseSync) {
+  return db.prepare("SELECT * FROM todos").all() as { id: number; text: string }[];
 }

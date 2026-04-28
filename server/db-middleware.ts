@@ -1,10 +1,11 @@
 import { db as sqliteDb } from "../database/sqlite/db";
 import { enhance, type UniversalMiddleware } from "@universal-middleware/core";
+import type { DatabaseSync } from "node:sqlite";
 
 declare global {
   namespace Universal {
     interface Context {
-      db: ReturnType<typeof sqliteDb>;
+      db: DatabaseSync;
     }
   }
 }
