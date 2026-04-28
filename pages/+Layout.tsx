@@ -5,24 +5,28 @@ import "./Layout.css";
 import type { JSX } from "solid-js";
 import logoUrl from "../assets/logo.svg";
 import { Link } from "../components/Link";
+import { AuthProvider } from "../contexts/AuthContext";
 
 export default function Layout(props: { children?: JSX.Element }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        "max-width": "900px",
-        margin: "auto",
-      }}
-    >
-      <Sidebar>
-        <Logo />
-        <Link href="/">Welcome</Link>
-        <Link href="/todo">Todo</Link>
-        <Link href="/star-wars">Data Fetching</Link>
-      </Sidebar>
-      <Content>{props.children}</Content>
-    </div>
+    <AuthProvider>
+      <div
+        style={{
+          display: "flex",
+          "max-width": "900px",
+          margin: "auto",
+        }}
+      >
+        <Sidebar>
+          <Logo />
+          <Link href="/">Welcome</Link>
+          <Link href="/todo">Todo</Link>
+          <Link href="/star-wars">Data Fetching</Link>
+          <Link href="/login">Login</Link>
+        </Sidebar>
+        <Content>{props.children}</Content>
+      </div>
+    </AuthProvider>
   );
 }
 

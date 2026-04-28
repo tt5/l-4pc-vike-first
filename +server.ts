@@ -1,6 +1,8 @@
 import "dotenv/config";
 import { dbMiddleware } from "./server/db-middleware";
+import { authMiddleware } from "./server/auth-middleware";
 import { createTodoHandler } from "./server/create-todo-handler";
+import { loginHandler, registerHandler, logoutHandler, verifyHandler } from "./server/auth-handlers";
 import vike, { toFetchHandler } from "@vikejs/fastify";
 import fastify from "fastify";
 import rawBody from "fastify-raw-body";
@@ -20,6 +22,14 @@ async function getHandler() {
   await vike(app, [
     // Make database available in Context as `context.db`
     dbMiddleware,
+    // Make authenticated user available in Context as `context.user`
+    authMiddleware,
+
+    // Auth API handlers
+    loginHandler,
+    registerHandler,
+    logoutHandler,
+    verifyHandler,
 
     createTodoHandler,
   ]);
