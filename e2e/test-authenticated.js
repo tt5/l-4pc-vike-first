@@ -33,12 +33,14 @@ async function testAuthenticated() {
     // Register and login
     console.log('[Setup] Creating and logging in test user...');
     await page.goto(`${BASE_URL}/login`);
+    await page.waitForSelector('#username');
     await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
       const registerBtn = buttons.find(b => b.textContent?.includes('Register'));
       registerBtn?.click();
     });
-    await delay(100);
+    await delay(200);
+    await page.waitForSelector('#reg-username');
     await page.type('#reg-username', testUsername);
     await page.type('#reg-password', 'testpass123');
     await page.type('#confirm-password', 'testpass123');

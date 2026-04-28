@@ -32,14 +32,15 @@ async function testRegister() {
     console.log('[Test] Register new user...');
     
     await page.goto(`${BASE_URL}/login`);
-    await page.waitForSelector('#reg-username');
+    await page.waitForSelector('#username');
     
     await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
       const registerBtn = buttons.find(b => b.textContent?.includes('Register'));
       registerBtn?.click();
     });
-    await delay(100);
+    await delay(200);
+    await page.waitForSelector('#reg-username');
     
     await page.type('#reg-username', testUsername);
     await page.type('#reg-password', 'testpass123');
