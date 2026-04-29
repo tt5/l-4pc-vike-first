@@ -1,10 +1,18 @@
+import { onMount } from "solid-js";
+
 export default function Page() {
+  let containerRef: HTMLDivElement | undefined;
+
+  onMount(() => {
+    console.log('SolidJS onMount executed - container:', containerRef?.id);
+  });
+
   return (
     <>
       <h1>Test Page</h1>
       <p data-testid="description">This is a test page for E2E testing.</p>
 
-      <div id="counter-section">
+      <div id="counter-section" ref={containerRef}>
         <p>Count: <span id="counter-value" data-testid="counter">0</span></p>
         <button id="increment-btn" data-testid="increment">Increment</button>
         <button id="decrement-btn" data-testid="decrement">Decrement</button>
