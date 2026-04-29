@@ -120,14 +120,18 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: Databas
   { name: "my-app:auth-register", path: "/api/auth/register", method: "POST", immutable: false },
 );
 
-// POST /api/auth/logout - Logout user (client handles token removal)
+// POST /api/auth/logout - Logout user (clear cookie)
 export const logoutHandler: UniversalHandler<Universal.Context> = enhance(
   async (_request, _context, _runtime) => {
-    // JWT-only auth - no cookies to clear
-    // Client will handle token removal
-    return jsonResponse({
+    return new Response(JSON.stringify({
       success: true,
       message: "Successfully logged out",
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "Set-Cookie": "auth-token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      },
     });
   },
   { name: "my-app:auth-logout", path: "/api/auth/logout", method: "POST", immutable: false },
