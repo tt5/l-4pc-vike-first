@@ -23,9 +23,16 @@ export default function Page() {
     if (isLoading()) return;
     setIsLoading(true);
     try {
-      const response = await makeApiCall(`/api/counter/${counterName}/increment`, { method: "POST" });
+      console.log("Making increment API call...");
+      const response = await makeApiCall(`/api/counter/${counterName}/increment`, { 
+        method: "POST",
+        body: "{}"
+      });
+      console.log("API response:", response);
       const { data } = await parseApiResponse<{ name: string; value: number }>(response, "increment counter");
+      console.log("Parsed data:", data);
       setCount(data.value);
+      console.log("Set count to:", data.value);
     } catch (error) {
       console.error("Failed to increment counter:", error);
     } finally {
@@ -33,27 +40,12 @@ export default function Page() {
     }
   };
 
-  // Decrement counter (using increment with -1 via reset then set)
+  // Decrement counter (simple local update, polling will sync with database)
   const decrement = async () => {
     if (isLoading()) return;
-    setIsLoading(true);
-    try {
-      const currentCount = count();
-      const newValue = Math.max(0, currentCount - 1);
-      
-      // Reset to 0 then increment to desired value
-      await makeApiCall(`/api/counter/${counterName}/reset`, { method: "POST" });
-      
-      for (let i = 0; i < newValue; i++) {
-        await makeApiCall(`/api/counter/${counterName}/increment`, { method: "POST" });
-      }
-      
-      setCount(newValue);
-    } catch (error) {
-      console.error("Failed to decrement counter:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    const currentCount = count();
+    const newValue = Math.max(0, currentCount - 1);
+    setCount(newValue);
   };
 
   onMount(() => {
