@@ -33,3 +33,33 @@ export function requireAuth(context: Universal.Context): TokenPayload {
   }
   return context.user;
 }
+
+// Protected route middleware - redirects to login if not authenticated
+export const protectedMiddleware: UniversalMiddleware = enhance(
+  async (request, context, _runtime) => {
+    // Check if user is authenticated
+    if (!context.user) {
+      // Only redirect on HTML page requests, not on pageContext.json requests
+      const url = new URL(request.url);
+      if (!url.pathname.includes('pageContext.json')) {
+        // Redirect to login page
+        return new Response(null, {
+          status: 302,
+          headers: {
+            "Location": "/login",
+          },
+        });
+      }
+      // For pageContext.json requests, let them continue (client-side will handle auth)
+    }
+
+    // User is authenticated, continue
+    return context;
+  },
+  {
+    name: "my-app:protected",
+    path: "/dashboard",
+    method: "GET",
+    immutable: false,
+  },
+);

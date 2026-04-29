@@ -1,0 +1,1 @@
+after logout route not protected

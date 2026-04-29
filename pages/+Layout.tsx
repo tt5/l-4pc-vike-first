@@ -23,6 +23,7 @@ export default function Layout(props: { children?: JSX.Element }) {
           <Link href="/login">Login</Link>
           <Link href="/register">Register</Link>
           <Link href="/dashboard">Dashboard</Link>
+          <Link href="/logout">Logout</Link>
         </Sidebar>
         <Content>{props.children}</Content>
       </div>

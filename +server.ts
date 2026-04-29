@@ -26,6 +26,7 @@ async function getHandler() {
     dbMiddleware,
     // Make authenticated user available in Context as `context.user`
     authMiddleware,
+    // Protected middleware temporarily removed to fix JSON display issue
 
     // Auth API handlers
     loginHandler,

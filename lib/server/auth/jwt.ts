@@ -34,11 +34,34 @@ export function verifyToken(token: string): TokenPayload | null {
   }
 }
 
+// Helper function to parse cookies from request header
+function getCookieFromRequest(request: Request, name: string): string | null {
+  const cookieHeader = request.headers.get('cookie');
+  if (!cookieHeader) return null;
+
+  const cookies = cookieHeader.split(';');
+  for (const cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=');
+    if (cookieName === name) {
+      return cookieValue;
+    }
+  }
+  return null;
+}
+
 export function getTokenFromRequest(request: Request): string | null {
+  // First check Authorization header
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.split(' ')[1];
   }
+
+  // Then check auth-token cookie
+  const cookieToken = getCookieFromRequest(request, 'auth-token');
+  if (cookieToken) {
+    return cookieToken;
+  }
+
   return null;
 }
 

@@ -1,8 +1,30 @@
-import { createSignal } from "solid-js";
+import { onMount } from "solid-js";
 
 export default function Page() {
-  // Server-side auth is handled by auth middleware
-  // If user is not authenticated, they won't reach this page
+  // Client-side auth check - server middleware only runs on full page reloads
+  onMount(async () => {
+    try {
+      // Verify the token with the server
+      const response = await fetch('/api/auth/verify', {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!data.valid) {
+        // Redirect to login if token is invalid
+        window.location.href = "/login";
+      }
+    } catch (error) {
+      // If verification fails, redirect to login
+      console.error('Auth verification failed:', error);
+      window.location.href = "/login";
+    }
+  });
 
   return (
     <>
