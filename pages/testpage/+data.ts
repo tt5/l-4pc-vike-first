@@ -1,8 +1,11 @@
-import type { OnBeforeRenderAsync } from 'vike/types';
+export { data }
+export type Data = Awaited<ReturnType<typeof data>>
+
+import type { PageContextServer } from 'vike/types';
 import type { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'crypto';
 
-export const onBeforeRender: OnBeforeRenderAsync = async (pageContext) => {
+async function data(pageContext: PageContextServer) {
   // Access database directly during SSR (same as counter handlers)
   const db = (pageContext as any).db as DatabaseSync | undefined;
   const counterName = 'testpage_counter';
@@ -12,6 +15,7 @@ export const onBeforeRender: OnBeforeRenderAsync = async (pageContext) => {
     const row = db.prepare('SELECT value FROM counters WHERE name = ?').get(counterName) as
       | { value: number }
       | undefined;
+    console.log('[SSR] Counter from DB:', row);
     if (row) {
       initialCount = row.value;
     } else {
@@ -19,13 +23,13 @@ export const onBeforeRender: OnBeforeRenderAsync = async (pageContext) => {
       const counterId = `counter_${randomBytes(16).toString('hex')}`;
       db.prepare('INSERT INTO counters (id, name, value) VALUES (?, ?, ?)').run(counterId, counterName, 0);
     }
+  } else {
+    console.log('[SSR] No database available');
   }
 
+  console.log('[SSR] initialCount:', initialCount);
+
   return {
-    pageContext: {
-      pageProps: {
-        initialCount,
-      },
-    },
+    initialCount,
   };
-};
+}

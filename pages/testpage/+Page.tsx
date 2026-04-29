@@ -1,12 +1,10 @@
 import { createSignal, onMount } from "solid-js";
+import { useData } from "vike-solid/useData";
 
-type PageProps = {
-  initialCount?: number;
-};
-
-export default function Page(props: PageProps) {
+export default function Page() {
+  const data = useData<{ initialCount: number }>();
   // Use SSR value as initial signal value, then hydrate on client
-  const [count, setCount] = createSignal(props.initialCount ?? 0);
+  const [count, setCount] = createSignal(data?.initialCount ?? 0);
   let solidStatusRef: HTMLSpanElement | undefined;
   const counterName = "testpage_counter";
 
