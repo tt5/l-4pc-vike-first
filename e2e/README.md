@@ -72,6 +72,28 @@ e2e/
 └── README.md             # This file
 ```
 
+## Lightpanda JavaScript Limitations
+
+Lightpanda uses V8 for JavaScript execution but has some limitations with framework event systems:
+
+| Feature | Status | Workaround |
+|---------|--------|------------|
+| Native `onclick` attributes | ✅ Works | Use `innerHTML` with raw HTML |
+| React/SolidJS `onClick` | ❌ Doesn't work | Use native `onclick` instead |
+| `addEventListener` | ❌ Limited | Use inline handlers |
+| `page.click()` (Puppeteer) | ❌ Doesn't trigger events | Use `page.evaluate(() => btn.click())` |
+
+Example of working event handling:
+```javascript
+// ❌ Doesn't work: SolidJS onClick
+<button onClick={() => {}}>Click</button>
+
+// ✅ Works: Native onclick via innerHTML
+<div innerHTML={`
+  <button onclick="handler()">Click</button>
+`} />
+```
+
 ## Writing Tests
 
 Basic test structure:
