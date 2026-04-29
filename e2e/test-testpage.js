@@ -124,6 +124,13 @@ async function testTestpage() {
     
     // Wait a moment for the update to take effect
     await delay(6000);
+
+    
+    
+    // Print page content
+    console.log('[Test] Printing page content:');
+    const pageContent = await page.content();
+    console.log(pageContent);
     
     // Check if page shows 1 after increment
     const afterApiIncrement = await page.$eval('[data-testid="counter"]', el => el.textContent);
