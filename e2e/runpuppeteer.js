@@ -15,11 +15,23 @@ const lpdopts = {
 const puppeteeropts = {
   browserWSEndpoint: 'ws://' + lpdopts.host + ':' + lpdopts.port,
 };
- 
+
+async function waitForLightpanda(host, port, timeoutMs = 5000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(`http://${host}:${port}/json/version`);
+      if (res.ok) return;
+    } catch {}
+    await new Promise(r => setTimeout(r, 100));
+  }
+  throw new Error('Lightpanda failed to start within timeout');
+}
+
 (async () => {
   // Start Lightpanda browser in a separate process.
   const proc = spawn(LIGHTPANDA_PATH, ['serve', '--host', lpdopts.host, '--port', lpdopts.port]);
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await waitForLightpanda(lpdopts.host, lpdopts.port);
  
   // Connect Puppeteer to the browser.
   const browser = await puppeteer.connect(puppeteeropts);

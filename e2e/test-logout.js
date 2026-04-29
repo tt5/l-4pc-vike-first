@@ -19,12 +19,24 @@ async function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
+async function waitForLightpanda(host, port, timeoutMs = 5000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(`http://${host}:${port}/json/version`);
+      if (res.ok) return;
+    } catch {}
+    await new Promise(r => setTimeout(r, 100));
+  }
+  throw new Error('Lightpanda failed to start within timeout');
+}
+
 const LIGHTPANDA_PATH = process.env.LIGHTPANDA_PATH || `${homedir()}/.cache/lightpanda-node/lightpanda`;
 
 async function testLogout() {
   const args = ['serve', '--host', lpdopts.host, '--port', lpdopts.port];
   const proc = spawn(LIGHTPANDA_PATH, args);
-  await delay(2000);
+  await waitForLightpanda(lpdopts.host, lpdopts.port);
 
   const browser = await puppeteer.connect(puppeteeropts);
   const context = await browser.createBrowserContext();

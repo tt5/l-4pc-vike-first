@@ -46,33 +46,21 @@ class BrowserPool {
 
   async spawnBrowser() {
     const port = this.nextPort++;
+    const host = '127.0.0.1';
     const proc = spawn(
       LIGHTPANDA_PATH,
-      ['serve', '--host', '127.0.0.1', '--port', port.toString()],
-      { stdio: 'pipe' }
+      ['serve', '--host', host, '--port', port.toString()]
     );
 
-    // Wait for browser to be ready
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error(`Browser on port ${port} failed to start`));
-      }, 5000);
-
-      let output = '';
-      const checkReady = (data) => {
-        output += data.toString();
-        if (output.includes('Listening') || output.includes('CDP server ready')) {
-          clearTimeout(timeout);
-          proc.stdout.off('data', checkReady);
-          resolve();
-        }
-      };
-
-      proc.stdout.on('data', checkReady);
-      proc.stderr.on('data', checkReady);
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 500)); // Small buffer
+    // Wait for browser to be ready by polling CDP HTTP endpoint
+    const start = Date.now();
+    while (Date.now() - start < 5000) {
+      try {
+        const res = await fetch(`http://${host}:${port}/json/version`);
+        if (res.ok) break;
+      } catch {}
+      await new Promise(r => setTimeout(r, 100));
+    }
 
     const browser = await puppeteer.connect({
       browserWSEndpoint: `ws://127.0.0.1:${port}`,
