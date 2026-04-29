@@ -1,14 +1,14 @@
-import { createSignal, onMount } from "solid-js";
+import { createSignal } from "solid-js";
 
-export default function Page() {
+interface PageProps {
+  isSuccess?: boolean;
+}
+
+export default function Page(props: PageProps) {
+  console.log('Page props:', props);
   const [isLoggingOut, setIsLoggingOut] = createSignal(false);
-  const [isSuccess, setIsSuccess] = createSignal(false);
-
-  onMount(() => {
-    // Check if success parameter is in URL (client-side only)
-    const urlParams = new URLSearchParams(window.location.search);
-    setIsSuccess(urlParams.get('success') === 'true');
-  });
+  const [isSuccess] = createSignal(props.isSuccess || false);
+  console.log('isSuccess signal:', isSuccess());
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -25,9 +25,8 @@ export default function Page() {
     // Clear client-side auth state
     sessionStorage.removeItem("user");
 
-    // Update URL to show success
-    window.history.replaceState({}, '', '/logout?success=true');
-    window.location.reload();
+    // Navigate to success state (full page load for SSR)
+    window.location.href = '/logout?success=true';
   };
 
   if (isSuccess()) {

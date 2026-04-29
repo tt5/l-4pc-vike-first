@@ -22,7 +22,7 @@ const puppeteeropts = {
   const context = await browser.createBrowserContext();
   const page = await context.newPage();
 
-  await page.goto('http://localhost:3000/register');
+  await page.goto('http://localhost:3000/logout');
   await page.waitForNetworkIdle();
 
   // Get the page source
