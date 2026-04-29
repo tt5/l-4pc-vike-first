@@ -64,6 +64,66 @@ async function testTestpage() {
       console.log('✗ Expected description with "E2E testing", got:', description);
       process.exitCode = 1;
     }
+
+    // Test JavaScript counter functionality
+    console.log('[Test] Testing JavaScript counter...');
+
+    // Check initial counter value
+    const initialCounter = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (initialCounter === '0') {
+      console.log('✓ Initial counter value is 0');
+    } else {
+      console.log('✗ Expected counter to be "0", got:', initialCounter);
+      process.exitCode = 1;
+    }
+
+    // Test increment button using page.evaluate (Lightpanda compatible)
+    await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="increment"]');
+      if (btn) btn.click();
+    });
+    await delay(100);
+    const afterIncrement = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (afterIncrement === '1') {
+      console.log('✓ Counter incremented to 1');
+    } else {
+      console.log('✗ Expected counter to be "1" after increment, got:', afterIncrement);
+      process.exitCode = 1;
+    }
+
+    // Test decrement button
+    await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="decrement"]');
+      if (btn) btn.click();
+    });
+    await delay(100);
+    const afterDecrement = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (afterDecrement === '0') {
+      console.log('✓ Counter decremented to 0');
+    } else {
+      console.log('✗ Expected counter to be "0" after decrement, got:', afterDecrement);
+      process.exitCode = 1;
+    }
+
+    // Test multiple increments
+    await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="increment"]');
+      if (btn) {
+        btn.click();
+        btn.click();
+        btn.click();
+      }
+    });
+    await delay(100);
+    const afterMultiple = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (afterMultiple === '3') {
+      console.log('✓ Counter correctly shows 3 after multiple increments');
+    } else {
+      console.log('✗ Expected counter to be "3", got:', afterMultiple);
+      process.exitCode = 1;
+    }
+
+    console.log('[Test] All JavaScript tests passed');
   } catch (error) {
     console.error('Test failed:', error);
     process.exitCode = 1;
