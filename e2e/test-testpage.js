@@ -116,28 +116,16 @@ async function testTestpage() {
       process.exitCode = 1;
     }
     
-    // Manually trigger a fetch to update the page
-    await page.evaluate(async () => {
-      // Trigger a manual fetch to update the counter
-      const response = await fetch('/api/counter/testpage_counter');
-      const data = await response.json();
-      console.log('Manual fetch result:', data);
-    });
+    // Reload page to get fresh SSR value
+    await page.goto(`${BASE_URL}/testpage`);
+    await page.waitForSelector('[data-testid="counter"]');
     
-    // Wait a moment for the update to take effect
-    await delay(4000);
-    
-    // Print page content
-    console.log('[Test] Printing page content:');
-    const pageContent = await page.content();
-    console.log(pageContent);
-    
-    // Check if page shows 1 after increment
-    const afterApiIncrement = await page.$eval('[data-testid="counter"]', el => el.textContent);
-    if (afterApiIncrement === '1') {
-      console.log('✓ Test page correctly updated to show counter as 1 after API increment');
+    // Check if page shows 1 after reload (fresh SSR)
+    const afterReload = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (afterReload === '1') {
+      console.log('✓ Test page shows counter as 1 after reload (SSR)');
     } else {
-      console.log('✗ Expected test page to show "1" after increment, got:', afterApiIncrement);
+      console.log('✗ Expected test page to show "1" after reload, got:', afterReload);
       process.exitCode = 1;
     }
 
