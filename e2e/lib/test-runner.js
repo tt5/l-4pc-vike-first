@@ -1,10 +1,13 @@
 'use strict';
 
 import { spawn } from 'child_process';
+import { homedir } from 'os';
 import puppeteer from 'puppeteer-core';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+
+const LIGHTPANDA_PATH = process.env.LIGHTPANDA_PATH || `${homedir()}/.cache/lightpanda-node/lightpanda`;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -44,7 +47,7 @@ class BrowserPool {
   async spawnBrowser() {
     const port = this.nextPort++;
     const proc = spawn(
-      '/home/n/.cache/lightpanda-node/lightpanda',
+      LIGHTPANDA_PATH,
       ['serve', '--host', '127.0.0.1', '--port', port.toString()],
       { stdio: 'pipe' }
     );

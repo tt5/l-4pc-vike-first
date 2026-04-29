@@ -1,6 +1,7 @@
 'use strict'
 
 import { spawn } from 'child_process';
+import { homedir } from 'os';
 import puppeteer from 'puppeteer-core';
 
 const lpdopts = {
@@ -18,11 +19,13 @@ async function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
+const LIGHTPANDA_PATH = process.env.LIGHTPANDA_PATH || `${homedir()}/.cache/lightpanda-node/lightpanda`;
+
 async function testLogin() {
   // Start Lightpanda with optional cookie file for faster subsequent runs
   const args = ['serve', '--host', lpdopts.host, '--port', lpdopts.port];
 
-  const proc = spawn('/home/n/.cache/lightpanda-node/lightpanda', args);
+  const proc = spawn(LIGHTPANDA_PATH, args);
   await delay(2000);
 
   const browser = await puppeteer.connect(puppeteeropts);

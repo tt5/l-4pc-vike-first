@@ -1,12 +1,16 @@
 'use strict'
- 
+
 import { spawn } from 'child_process';
+import { homedir } from 'os';
 import puppeteer from 'puppeteer-core';
- 
+
+const LIGHTPANDA_PATH = process.env.LIGHTPANDA_PATH || `${homedir()}/.cache/lightpanda-node/lightpanda`;
+
 const lpdopts = {
   host: '127.0.0.1',
   port: 9222,
 };
+
  
 const puppeteeropts = {
   browserWSEndpoint: 'ws://' + lpdopts.host + ':' + lpdopts.port,
@@ -14,7 +18,7 @@ const puppeteeropts = {
  
 (async () => {
   // Start Lightpanda browser in a separate process.
-  const proc = spawn('/home/n/.cache/lightpanda-node/lightpanda', ['serve', '--host', lpdopts.host, '--port', lpdopts.port]);
+  const proc = spawn(LIGHTPANDA_PATH, ['serve', '--host', lpdopts.host, '--port', lpdopts.port]);
   await new Promise(resolve => setTimeout(resolve, 2000));
  
   // Connect Puppeteer to the browser.
