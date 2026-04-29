@@ -37,10 +37,12 @@ async function testLogout() {
     await page.waitForSelector('button');
     await page.click('button');
 
-    await page.waitForFunction(() => window.location.search.includes('success=true'));
-
+    // Wait for navigation to complete (same as login test)
+    console.log('Waiting for navigation to complete...');
+    await page.waitForNavigation();
+    
     const url = page.url();
-
+    
     if (url === `${BASE_URL}/logout?success=true`) {
       console.log('✓ Logout clicked, URL shows success=true');
     } else {

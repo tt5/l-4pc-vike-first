@@ -26,23 +26,9 @@ export default function Page(props: PageProps) {
     console.log('DOM contains success text:', document.body.textContent.includes('Successfully logged out'));
   });
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-
-    try {
-      // Call logout API
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-
-    // Clear client-side auth state
+  const handleLogout = () => {
+    // Clear client-side auth state before form submission
     sessionStorage.removeItem("user");
-
-    // Navigate to success state (full page load for SSR)
-    window.location.href = '/logout?success=true';
   };
 
   return (
@@ -71,22 +57,24 @@ export default function Page(props: PageProps) {
           <h2>Logout</h2>
           <p>Click the button below to log out of your account.</p>
           
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut()}
-            style={{
-              padding: "12px 24px",
-              "background-color": isLoggingOut() ? "#ccc" : "#d32f2f",
-              color: "white",
-              border: "none",
-              "border-radius": "4px",
-              cursor: isLoggingOut() ? "not-allowed" : "pointer",
-              "font-size": "16px",
-              "font-weight": "bold",
-            }}
-          >
-            {isLoggingOut() ? "Logging out..." : "Logout"}
-          </button>
+          <form action="/api/auth/logout" method="post" onSubmit={handleLogout}>
+            <button
+              type="submit"
+              disabled={isLoggingOut()}
+              style={{
+                padding: "12px 24px",
+                "background-color": isLoggingOut() ? "#ccc" : "#d32f2f",
+                color: "white",
+                border: "none",
+                "border-radius": "4px",
+                cursor: isLoggingOut() ? "not-allowed" : "pointer",
+                "font-size": "16px",
+                "font-weight": "bold",
+              }}
+            >
+              {isLoggingOut() ? "Logging out..." : "Logout"}
+            </button>
+          </form>
         </div>
       </Show>
     </>

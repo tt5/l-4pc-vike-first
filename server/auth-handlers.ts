@@ -120,16 +120,14 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: Databas
   { name: "my-app:auth-register", path: "/api/auth/register", method: "POST", immutable: false },
 );
 
-// POST /api/auth/logout - Logout user (clear cookie)
+// POST /api/auth/logout - Logout user (clear cookie and redirect)
 export const logoutHandler: UniversalHandler<Universal.Context> = enhance(
   async (_request, _context, _runtime) => {
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Successfully logged out",
-    }), {
-      status: 200,
+    // Redirect to logout page with cookie cleared
+    return new Response(null, {
+      status: 302,
       headers: {
-        "content-type": "application/json",
+        "Location": "/logout?success=true",
         "Set-Cookie": "auth-token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
       },
     });
