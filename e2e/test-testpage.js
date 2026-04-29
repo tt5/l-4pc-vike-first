@@ -123,9 +123,7 @@ async function testTestpage() {
     });
     
     // Wait a moment for the update to take effect
-    await delay(6000);
-
-    
+    await delay(4000);
     
     // Print page content
     console.log('[Test] Printing page content:');

@@ -3,7 +3,6 @@ import { makeApiCall, parseApiResponse } from "../../utils/api";
 
 export default function Page() {
   const [count, setCount] = createSignal(0);
-  const [isLoading, setIsLoading] = createSignal(false);
   
   const counterName = "testpage_counter";
 
@@ -20,8 +19,6 @@ export default function Page() {
 
   // Increment counter
   const increment = async () => {
-    if (isLoading()) return;
-    setIsLoading(true);
     try {
       const response = await makeApiCall(`/api/counter/${counterName}/increment`, { 
         method: "POST",
@@ -31,14 +28,11 @@ export default function Page() {
       setCount(data.value);
     } catch (error) {
       console.error("Failed to increment counter:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Decrement counter (simple local update, polling will sync with database)
   const decrement = async () => {
-    if (isLoading()) return;
     const currentCount = count();
     const newValue = Math.max(0, currentCount - 1);
     setCount(newValue);
@@ -49,7 +43,7 @@ export default function Page() {
     fetchCounter();
     
     // Set up polling for real-time updates
-    const interval = setInterval(fetchCounter, 3000);
+    const interval = setInterval(fetchCounter, 2000);
     
     // Cleanup on unmount
     onCleanup(() => clearInterval(interval));
@@ -66,17 +60,15 @@ export default function Page() {
           id="increment-btn" 
           data-testid="increment" 
           onClick={increment}
-          disabled={isLoading()}
         >
-          {isLoading() ? "Loading..." : "Increment"}
+          Increment
         </button>
         <button 
           id="decrement-btn" 
           data-testid="decrement" 
           onClick={decrement}
-          disabled={isLoading()}
         >
-          {isLoading() ? "Loading..." : "Decrement"}
+          Decrement
         </button>
       </div>
     </>
