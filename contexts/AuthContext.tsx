@@ -89,38 +89,72 @@ const createAuthStore = (): AuthStore => {
     }
   };
 
+  // Function to get cookie value
+  const getCookie = (name: string): string | null => {
+    if (typeof window === "undefined") return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop()?.split(';').shift() || null;
+    }
+    return null;
+  };
+
   // Initialize auth state once on mount
-  onMount(() => {
+  onMount(async () => {
     if (typeof window === "undefined") {
       return;
     }
 
-    // Check for saved user first
-    const savedUser =
-      typeof window !== "undefined" ? sessionStorage.getItem("user") : null;
+    // Check for auth-token cookie first
+    const authToken = getCookie('auth-token');
 
-    if (savedUser) {
+    if (authToken) {
       try {
-        const parsed = JSON.parse(savedUser);
+        // Verify the token with the server
+        const response = await makeApiCall("/api/auth/verify", {
+          method: "GET",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        }, authToken);
 
-        // Handle both formats: { user: { id, username } } and { id, username }
-        const userData = parsed.user || parsed;
+        const { data } = await parseApiResponse<{ valid: boolean; user?: User }>(
+          response,
+          "verify-session"
+        );
 
-        if (userData && typeof userData === "object" && userData.id) {
-          updateUser(userData);
-
-          // Verify the session is still valid
-          verifySession(userData);
+        if (data.valid && data.user) {
+          console.log("Session verified from cookie:", data.user);
+          updateUser({
+            ...data.user,
+            token: authToken,
+          });
         } else {
-          // Clear invalid user data
-          if (typeof window !== "undefined") {
-            sessionStorage.removeItem("user");
-          }
+          console.log("Invalid token from cookie");
+          updateUser(null);
         }
       } catch (error) {
+        console.error("Token verification failed:", error);
         updateUser(null);
-        // Clear corrupted user data
-        if (typeof window !== "undefined") {
+      }
+    } else {
+      // Check for saved user in sessionStorage (fallback)
+      const savedUser = sessionStorage.getItem("user");
+      
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          const userData = parsed.user || parsed;
+
+          if (userData && typeof userData === "object" && userData.id) {
+            updateUser(userData);
+          } else {
+            sessionStorage.removeItem("user");
+          }
+        } catch (error) {
+          updateUser(null);
           sessionStorage.removeItem("user");
         }
       }
