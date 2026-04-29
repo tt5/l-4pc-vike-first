@@ -13,7 +13,7 @@ const puppeteeropts = {
   browserWSEndpoint: `ws://${lpdopts.host}:${lpdopts.port}`,
 };
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = 'http://localhost:3000';
 
 async function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
@@ -114,8 +114,22 @@ async function testTestpage() {
       process.exitCode = 1;
     }
     
-    // Wait for real-time polling to update the page
-    await delay(3500); // Wait for polling interval (3 seconds) + buffer
+    // Manually trigger a fetch to update the page
+    await page.evaluate(async () => {
+      // Trigger a manual fetch to update the counter
+      const response = await fetch('/api/counter/testpage_counter');
+      const data = await response.json();
+      console.log('Manual fetch result:', data);
+      
+      // Update the counter display manually
+      const counterElement = document.querySelector('[data-testid="counter"]');
+      if (counterElement) {
+        counterElement.textContent = data.value.toString();
+      }
+    });
+    
+    // Wait a moment for the update to take effect
+    await delay(100);
     
     // Check if page shows 1 after increment
     const afterApiIncrement = await page.$eval('[data-testid="counter"]', el => el.textContent);

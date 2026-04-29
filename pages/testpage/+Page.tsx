@@ -10,8 +10,8 @@ export default function Page() {
   // Fetch current counter value
   const fetchCounter = async () => {
     try {
-      const response = await makeApiCall(`/api/counter/${counterName}`);
-      const { data } = await parseApiResponse<{ name: string; value: number }>(response, "get counter");
+      const response = await fetch(`/api/counter/${counterName}`);
+      const data = await response.json();
       setCount(data.value);
     } catch (error) {
       console.error("Failed to fetch counter:", error);
@@ -23,16 +23,12 @@ export default function Page() {
     if (isLoading()) return;
     setIsLoading(true);
     try {
-      console.log("Making increment API call...");
       const response = await makeApiCall(`/api/counter/${counterName}/increment`, { 
         method: "POST",
         body: "{}"
       });
-      console.log("API response:", response);
       const { data } = await parseApiResponse<{ name: string; value: number }>(response, "increment counter");
-      console.log("Parsed data:", data);
       setCount(data.value);
-      console.log("Set count to:", data.value);
     } catch (error) {
       console.error("Failed to increment counter:", error);
     } finally {
