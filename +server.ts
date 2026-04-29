@@ -2,6 +2,7 @@ import "dotenv/config";
 import { dbMiddleware } from "./server/db-middleware";
 import { authMiddleware } from "./server/auth-middleware";
 import { loginHandler, registerHandler, logoutHandler, verifyHandler, deleteHandler } from "./server/auth-handlers";
+import { getCounterHandler, incrementCounterHandler, resetCounterHandler } from "./server/counter-handlers";
 import vike, { toFetchHandler } from "@vikejs/fastify";
 import fastify from "fastify";
 import rawBody from "fastify-raw-body";
@@ -34,6 +35,11 @@ async function getHandler() {
     logoutHandler,
     verifyHandler,
     deleteHandler,
+
+    // Counter API handlers
+    getCounterHandler,
+    incrementCounterHandler,
+    resetCounterHandler,
 
   ]);
 

@@ -123,6 +123,67 @@ async function testTestpage() {
       process.exitCode = 1;
     }
 
+    // Test reset and increment API calls
+    console.log('[Test] Testing reset and increment API calls');
+    
+    // Reset counter via API
+    const resetResponse = await page.evaluate(async () => {
+      const response = await fetch('/api/counter/testpage_counter/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      return response.json();
+    });
+    
+    if (resetResponse.value === 0) {
+      console.log('✓ Counter reset to 0 via API');
+    } else {
+      console.log('✗ Expected counter to be reset to 0, got:', resetResponse.value);
+      process.exitCode = 1;
+    }
+    
+    // Wait a moment for the page to update
+    await delay(100);
+    
+    // Check if page shows 0 after reset
+    const afterReset = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (afterReset === '0') {
+      console.log('✓ Test page shows counter as 0 after reset');
+    } else {
+      console.log('✗ Expected test page to show "0" after reset, got:', afterReset);
+      process.exitCode = 1;
+    }
+    
+    // Increment counter via API
+    const incrementResponse = await page.evaluate(async () => {
+      const response = await fetch('/api/counter/testpage_counter/increment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      return response.json();
+    });
+    
+    if (incrementResponse.value === 1) {
+      console.log('✓ Counter incremented to 1 via API');
+    } else {
+      console.log('✗ Expected counter to be 1 after increment, got:', incrementResponse.value);
+      process.exitCode = 1;
+    }
+    
+    // Wait for real-time polling to update the page
+    await delay(3500); // Wait for polling interval (3 seconds) + buffer
+    
+    // Check if page shows 1 after increment
+    const afterApiIncrement = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (afterApiIncrement === '1') {
+      console.log('✓ Test page correctly updated to show counter as 1 after API increment');
+    } else {
+      console.log('✗ Expected test page to show "1" after increment, got:', afterApiIncrement);
+      process.exitCode = 1;
+    }
+
     console.log('[Test] All JavaScript tests passed');
   } catch (error) {
     console.error('Test failed:', error);
