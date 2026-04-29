@@ -120,16 +120,10 @@ async function testTestpage() {
       const response = await fetch('/api/counter/testpage_counter');
       const data = await response.json();
       console.log('Manual fetch result:', data);
-      
-      // Update the counter display manually
-      const counterElement = document.querySelector('[data-testid="counter"]');
-      if (counterElement) {
-        counterElement.textContent = data.value.toString();
-      }
     });
     
     // Wait a moment for the update to take effect
-    await delay(100);
+    await delay(6000);
     
     // Check if page shows 1 after increment
     const afterApiIncrement = await page.$eval('[data-testid="counter"]', el => el.textContent);
