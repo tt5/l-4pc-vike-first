@@ -115,10 +115,19 @@ async function testTestpage() {
       console.log('✗ Expected counter to be 1 after increment, got:', incrementResponse.value);
       process.exitCode = 1;
     }
-    
-    // Note: Lightpanda doesn't support page reloads well, so we verify via API response
-    // In a real browser, the page would show the updated value after reload
-    console.log('✓ Counter incremented via API (SSR will show updated value on next page load)');
+
+    await page.evaluate(() => location.reload());
+    await delay(1000);
+    await page.waitForSelector('[data-testid="counter"]');
+
+    // Verify SSR shows updated value after reload
+    const afterReload = await page.$eval('[data-testid="counter"]', el => el.textContent);
+    if (afterReload === '1') {
+      console.log('✓ Counter shows 1 after page reload (SSR)');
+    } else {
+      console.log('✗ Expected counter "1" after reload, got:', afterReload);
+      process.exitCode = 1;
+    }
 
     console.log('[Test] All JavaScript tests passed');
   } catch (error) {
