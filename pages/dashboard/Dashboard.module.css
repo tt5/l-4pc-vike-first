@@ -1,0 +1,40 @@
+.notificationSuccess {
+  padding: 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.notificationError {
+  padding: 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.cardSuccess {
+  padding: 20px;
+  border-radius: 4px;
+  margin-top: 20px;
+  background-color: #e8f5e9;
+}
+
+.cardWarning {
+  padding: 20px;
+  border-radius: 4px;
+  margin-top: 20px;
+  background-color: #fff3e0;
+}
+
+.cardError {
+  padding: 20px;
+  border-radius: 4px;
+  margin-top: 20px;
+  background-color: #ffebee;
+}
+
+.marginTop {
+  margin-top: 20px;
+}

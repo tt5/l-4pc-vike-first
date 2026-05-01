@@ -1,11 +1,12 @@
 import { RegisterForm } from "../../components/auth/RegisterForm";
+import styles from "../../components/auth/AuthForms.module.css";
 
 export default function Page() {
   return (
     <>
       <h1>Register</h1>
 
-      <div style={{ "max-width": "400px" }}>
+      <div class={styles.formContainer}>
         <RegisterForm />
       </div>
     </>

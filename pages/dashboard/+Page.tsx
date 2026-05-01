@@ -2,6 +2,7 @@ import { createSignal, Show } from "solid-js";
 import { useData } from "vike-solid/useData";
 import type { Data } from "./+data";
 import { DeleteUserForm } from "../../components/auth/DeleteUserForm";
+import styles from "./Dashboard.module.css";
 
 export default function Page() {
   const data = useData<Data>();
@@ -22,12 +23,7 @@ export default function Page() {
   return (
     <>
       <Show when={isAuthenticated()} keyed fallback={
-        <div style={{
-          padding: "20px",
-          "background-color": "#ffebee",
-          "border-radius": "4px",
-          "margin-top": "20px",
-        }}>
+        <div class={styles.cardError}>
           <h2>Not Authenticated</h2>
           <p>You must be logged in to view this page.</p>
           <p><a href="/login">Go to login</a></p>
@@ -38,52 +34,25 @@ export default function Page() {
 
       <Show when={notification()}>
         <div
-          style={{
-            padding: "16px",
-            "background-color": notification()?.type === "success" ? "#e8f5e9" : "#ffebee",
-            color: notification()?.type === "success" ? "#2e7d32" : "#c62828",
-            "border-radius": "4px",
-            "margin-bottom": "20px",
-          }}
+          class={notification()?.type === "success" ? styles.notificationSuccess : styles.notificationError}
         >
           {notification()?.message}
         </div>
       </Show>
 
       <Show when={!isDeleted()}>
-        <div
-          style={{
-            padding: "20px",
-            "background-color": "#e8f5e9",
-            "border-radius": "4px",
-            "margin-top": "20px",
-          }}
-        >
+        <div class={styles.cardSuccess}>
           <h2>Welcome{user() ? `, ${user()?.username}` : ''}!</h2>
           <p>This is a protected route. You can only see this because you're authenticated.</p>
         </div>
 
-        <div
-          style={{
-            padding: "20px",
-            "background-color": "#e8f5e9",
-            "border-radius": "4px",
-            "margin-top": "20px",
-          }}
-        >
+        <div class={styles.cardSuccess}>
           <h3>Authentication Status</h3>
           <p>✅ You are successfully authenticated via server-side cookies.</p>
           <p>The auth middleware verified your session and allowed access to this protected route.</p>
         </div>
 
-        <div
-          style={{
-            padding: "20px",
-            "background-color": "#fff3e0",
-            "border-radius": "4px",
-            "margin-top": "20px",
-          }}
-        >
+        <div class={styles.cardWarning}>
           <h3>Danger Zone</h3>
           <p>Once you delete your account, there is no going back. Please be certain.</p>
           <DeleteUserForm onSuccess={handleDeleteSuccess} onError={handleDeleteError} />
@@ -91,7 +60,7 @@ export default function Page() {
       </Show>
 
       <Show when={isDeleted()}>
-        <div style={{ "margin-top": "20px" }}>
+        <div class={styles.marginTop}>
           <p><a href="/">Go to home page</a></p>
         </div>
       </Show>

@@ -1,8 +1,7 @@
 // https://vike.dev/Layout
 
-import "./Layout.css";
-
 import type { JSX } from "solid-js";
+import styles from "./Layout.module.css";
 import logoUrl from "../assets/logo.svg";
 import { Link } from "../components/Link";
 import { AuthProvider } from "../contexts/AuthContext";
@@ -10,13 +9,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 export default function Layout(props: { children?: JSX.Element }) {
   return (
     <AuthProvider>
-      <div
-        style={{
-          display: "flex",
-          "max-width": "900px",
-          margin: "auto",
-        }}
-      >
+      <div class={styles.layout}>
         <Sidebar>
           <Logo />
           <Link href="/">Home</Link>
@@ -33,17 +26,7 @@ export default function Layout(props: { children?: JSX.Element }) {
 
 function Sidebar(props: { children: JSX.Element }) {
   return (
-    <div
-      id="sidebar"
-      style={{
-        padding: "20px",
-        "flex-shrink": 0,
-        display: "flex",
-        "flex-direction": "column",
-        "line-height": "1.8em",
-        "border-right": "2px solid #eee",
-      }}
-    >
+    <div class={styles.sidebar}>
       {props.children}
     </div>
   );
@@ -51,15 +34,8 @@ function Sidebar(props: { children: JSX.Element }) {
 
 function Content(props: { children: JSX.Element }) {
   return (
-    <div id="page-container">
-      <div
-        id="page-content"
-        style={{
-          padding: "20px",
-          "padding-bottom": "50px",
-          "min-height": "100vh",
-        }}
-      >
+    <div class={styles.pageContainer}>
+      <div class={styles.pageContent}>
         {props.children}
       </div>
     </div>
@@ -68,13 +44,8 @@ function Content(props: { children: JSX.Element }) {
 
 function Logo() {
   return (
-    <div
-      style={{
-        "margin-top": "20px",
-        "margin-bottom": "10px",
-      }}
-    >
-      <a href="/">
+    <div class={styles.logo}>
+      <a href="/" class={styles.link}>
         <img src={logoUrl} height={64} width={64} alt="logo" />
       </a>
     </div>

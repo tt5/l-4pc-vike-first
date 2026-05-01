@@ -1,4 +1,5 @@
 import { useAuth } from "../../contexts/AuthContext";
+import styles from "./UserInfo.module.css";
 
 export function UserInfo() {
   const auth = useAuth();
@@ -10,14 +11,7 @@ export function UserInfo() {
 
   if (!user()) {
     return (
-      <div
-        style={{
-          padding: "10px",
-          "background-color": "#f5f5f5",
-          "border-radius": "4px",
-          "margin-bottom": "20px",
-        }}
-      >
+      <div class={styles.guest}>
         Not logged in
       </div>
     );
@@ -26,15 +20,7 @@ export function UserInfo() {
   return (
     <div
       data-testid="user-info"
-      style={{
-        padding: "10px",
-        "background-color": "#e3f2fd",
-        "border-radius": "4px",
-        "margin-bottom": "20px",
-        display: "flex",
-        "justify-content": "space-between",
-        "align-items": "center",
-      }}
+      class={styles.authenticated}
     >
       <span>
         <strong>Logged in as:</strong> {user()?.username}
@@ -42,14 +28,7 @@ export function UserInfo() {
       <button
         data-testid="logout"
         onClick={handleLogout}
-        style={{
-          padding: "5px 15px",
-          "background-color": "#d32f2f",
-          color: "white",
-          border: "none",
-          "border-radius": "4px",
-          cursor: "pointer",
-        }}
+        class={styles.logoutButton}
       >
         Logout
       </button>

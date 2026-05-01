@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import styles from "./AuthForms.module.css";
 
 interface DeleteUserFormProps {
   onSuccess?: () => void;
@@ -49,16 +50,7 @@ export function DeleteUserForm(props: DeleteUserFormProps) {
       type="button"
       onClick={handleDelete}
       disabled={isDeleting()}
-      style={{
-        padding: "12px 24px",
-        "background-color": isDeleting() ? "#ccc" : "#d32f2f",
-        color: "white",
-        border: "none",
-        "border-radius": "4px",
-        cursor: isDeleting() ? "not-allowed" : "pointer",
-        "font-size": "16px",
-        "font-weight": "bold",
-      }}
+      class={isDeleting() ? styles.buttonDangerDisabled : styles.buttonDanger}
     >
       {isDeleting() ? "Deleting..." : "Delete Account"}
     </button>

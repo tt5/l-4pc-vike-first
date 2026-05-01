@@ -2,6 +2,7 @@ import { Show } from "solid-js";
 import { useData } from "vike-solid/useData";
 import type { Data } from "./+data";
 import { LogoutForm } from "../../components/auth/LogoutForm";
+import styles from "./Logout.module.css";
 
 export default function Page() {
   const data = useData<Data>();
@@ -12,13 +13,7 @@ export default function Page() {
   return (
     <>
       <Show when={isSuccess()} keyed>
-        <div style={{
-          padding: "20px",
-          "text-align": "center",
-          "font-size": "18px",
-          "background-color": "#e8f5e9",
-          "border-radius": "4px",
-        }}>
+        <div class={styles.successBox}>
           <h2>✓ Successfully logged out</h2>
           <p>You have been logged out.</p>
           <p>
@@ -28,10 +23,7 @@ export default function Page() {
       </Show>
 
       <Show when={!isSuccess() && isLoggedIn()} keyed>
-        <div style={{
-          padding: "20px",
-          "text-align": "center",
-        }}>
+        <div class={styles.container}>
           <h2>Logout</h2>
           <p>Logged in as <strong>{user()?.username}</strong>. Click the button below to log out.</p>
 
@@ -40,12 +32,7 @@ export default function Page() {
       </Show>
 
       <Show when={!isSuccess() && !isLoggedIn()} keyed>
-        <div style={{
-          padding: "20px",
-          "text-align": "center",
-          "background-color": "#fff3e0",
-          "border-radius": "4px",
-        }}>
+        <div class={styles.warningBox}>
           <h2>Not Logged In</h2>
           <p>You are not currently logged in.</p>
           <p>

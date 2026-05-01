@@ -1,11 +1,12 @@
 import { LoginForm } from "../../components/auth/LoginForm";
+import styles from "../../components/auth/AuthForms.module.css";
 
 export default function Page() {
   return (
     <>
       <h1>Login</h1>
 
-      <div style={{ "max-width": "400px" }}>
+      <div class={styles.formContainer}>
         <LoginForm />
       </div>
     </>
