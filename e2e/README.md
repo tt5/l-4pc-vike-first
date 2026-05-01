@@ -82,6 +82,8 @@ Lightpanda uses V8 for JavaScript execution but has some limitations with framew
 | React/SolidJS `onClick` | ❌ Doesn't work | Use native `onclick` instead |
 | `addEventListener` | ❌ Limited | Use inline handlers |
 | `page.click()` (Puppeteer) | ❌ Doesn't trigger events | Use `page.evaluate(() => btn.click())` |
+| `page.reload()` (Puppeteer) | ❌ Not supported | Use `page.evaluate(() => location.reload())` |
+| `page.goto()` (subsequent) | ❌ Only first works | Use `page.evaluate(() => location.href = 'url')` |
 
 Example of working event handling:
 ```javascript
