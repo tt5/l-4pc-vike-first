@@ -33,6 +33,13 @@ async function waitForLightpanda(host, port, timeoutMs = 5000) {
 
 const LIGHTPANDA_PATH = process.env.LIGHTPANDA_PATH || `${homedir()}/.cache/lightpanda-node/lightpanda`;
 
+// Helper to parse cookie value from Set-Cookie header
+function parseCookie(setCookieHeader) {
+  if (!setCookieHeader) return null;
+  const match = setCookieHeader.match(/auth-token=([^;]+)/);
+  return match ? match[1] : null;
+}
+
 async function testLoggedInLogout() {
   const args = ['serve', '--host', lpdopts.host, '--port', lpdopts.port];
   const proc = spawn(LIGHTPANDA_PATH, args);
@@ -42,36 +49,44 @@ async function testLoggedInLogout() {
   const context = await browser.createBrowserContext();
   const page = await context.newPage();
 
+  // Store auth token from API calls
+  let authToken = null;
+
   try {
     const testUsername = 'testuser1';
     console.log('[Test] Login with user: ' + testUsername);
 
-    // Step 1: Login via API (POST form data)
-    // First navigate to establish the browser context, then use fetch
-    await page.goto(`${BASE_URL}/login`);
+    // Step 1: Login via Node.js fetch API (same-origin, so we get the cookie)
+    const formData = new URLSearchParams();
+    formData.append('username', testUsername);
+    formData.append('password', 'testpass123');
 
-    const loginResponse = await page.evaluate(async (username, password) => {
-      const formData = new FormData();
-      formData.append('username', username);
-      formData.append('password', password);
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        body: formData,
-        redirect: 'manual'
-      });
-      return {
-        status: response.status,
-        location: response.headers.get('location')
-      };
-    }, testUsername, 'testpass123');
+    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      body: formData,
+      redirect: 'manual'
+    });
 
-    if (loginResponse.location === '/login?login=true') {
-      console.log('✓ Login API call successful');
+    // Extract auth token from Set-Cookie header
+    const setCookie = loginRes.headers.get('set-cookie');
+    authToken = parseCookie(setCookie);
+
+    if (loginRes.status === 302 && loginRes.headers.get('location') === '/login?login=true' && authToken) {
+      console.log('✓ Login API call successful, got auth token');
     } else {
-      console.log('✗ Expected redirect to /login?login=true, got:', loginResponse.location);
+      console.log('✗ Login failed. Status:', loginRes.status, 'Location:', loginRes.headers.get('location'));
       process.exitCode = 1;
       return;
     }
+
+    // Set the auth cookie in the browser
+    await page.setCookie({
+      name: 'auth-token',
+      value: authToken,
+      domain: 'localhost',
+      path: '/',
+      httpOnly: true
+    });
 
     // Step 2: Navigate to logout page and verify logged-in state (SSR)
     console.log('[Test] Visit logout page while logged in');
@@ -107,25 +122,25 @@ async function testLoggedInLogout() {
       process.exitCode = 1;
     }
 
-    // Step 3: Logout via API (POST form data)
+    // Step 3: Logout via Node.js fetch API
     console.log('[Test] Call logout API');
-    const logoutResponse = await page.evaluate(async () => {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        redirect: 'manual'
-      });
-      return {
-        status: response.status,
-        location: response.headers.get('location')
-      };
+    const logoutRes = await fetch(`${BASE_URL}/api/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Cookie': `auth-token=${authToken}`
+      },
+      redirect: 'manual'
     });
 
-    if (logoutResponse.location === '/logout?success=true') {
+    if (logoutRes.status === 302 && logoutRes.headers.get('location') === '/logout?success=true') {
       console.log('✓ Logout API call successful, redirected to success page');
     } else {
-      console.log('✗ Expected redirect to /logout?success=true, got:', logoutResponse.location);
+      console.log('✗ Logout failed. Status:', logoutRes.status, 'Location:', logoutRes.headers.get('location'));
       process.exitCode = 1;
     }
+
+    // Clear the cookie from browser
+    await page.deleteCookie({ name: 'auth-token', domain: 'localhost' });
 
     // Step 4: Navigate to logout success page and verify (SSR)
     await page.goto(`${BASE_URL}/logout?success=true`);
