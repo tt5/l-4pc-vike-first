@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { enhance, type UniversalHandler } from "@universal-middleware/core";
 import { generateToken, getAuthUser, getTokenFromRequest, type TokenPayload } from "../lib/server/auth/jwt";
+import { hashPassword, verifyPassword } from "../lib/server/auth/password";
 import { randomBytes, createHash } from "crypto";
 
 // Helper function for JSON responses
@@ -30,12 +31,9 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
       }
 
       // Check if user exists
-      const user = context.db.prepare("SELECT id, username FROM users WHERE username = ?").get(username) as
-        | { id: string; username: string }
+      const user = context.db.prepare("SELECT id, username, password_hash FROM users WHERE username = ?").get(username) as
+        | { id: string; username: string; password_hash: string }
         | undefined;
-
-      let token: string;
-      let userId: string;
 
       if (!user) {
         // Redirect back to login with error
@@ -45,9 +43,18 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
         });
       }
 
-      userId = user.id;
+      // Verify password
+      const isValidPassword = await verifyPassword(password, user.password_hash);
+      if (!isValidPassword) {
+        return new Response(null, {
+          status: 302,
+          headers: { "Location": "/login?error=invalid" },
+        });
+      }
 
-      token = generateToken({
+      const userId = user.id;
+
+      const token = generateToken({
         userId: userId,
         username: username,
       });
@@ -103,11 +110,12 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: Databas
       }
 
       const userId = `user_${randomBytes(16).toString("hex")}`;
+      const hashedPassword = await hashPassword(password);
 
       context.db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)").run(
         userId,
         username,
-        password
+        hashedPassword
       );
 
       const token = generateToken({
