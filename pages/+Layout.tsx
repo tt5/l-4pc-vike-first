@@ -1,6 +1,7 @@
 // https://vike.dev/Layout
 
 import type { JSX } from "solid-js";
+import "../styles/globals.css";
 import styles from "./Layout.module.css";
 import logoUrl from "../assets/logo.svg";
 import { Link } from "../components/Link";

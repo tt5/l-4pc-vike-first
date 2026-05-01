@@ -1,40 +1,40 @@
 .notificationSuccess {
-  padding: 16px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  background-color: #e8f5e9;
-  color: #2e7d32;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+  background-color: var(--color-bg-success);
+  color: var(--color-text-success);
 }
 
 .notificationError {
-  padding: 16px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  background-color: #ffebee;
-  color: #c62828;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+  background-color: var(--color-bg-error);
+  color: var(--color-text-error);
 }
 
 .cardSuccess {
-  padding: 20px;
-  border-radius: 4px;
-  margin-top: 20px;
-  background-color: #e8f5e9;
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-5);
+  background-color: var(--color-bg-success);
 }
 
 .cardWarning {
-  padding: 20px;
-  border-radius: 4px;
-  margin-top: 20px;
-  background-color: #fff3e0;
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-5);
+  background-color: var(--color-warning-bg);
 }
 
 .cardError {
-  padding: 20px;
-  border-radius: 4px;
-  margin-top: 20px;
-  background-color: #ffebee;
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-5);
+  background-color: var(--color-bg-error);
 }
 
 .marginTop {
-  margin-top: 20px;
+  margin-top: var(--space-5);
 }
