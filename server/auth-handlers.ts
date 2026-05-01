@@ -190,21 +190,31 @@ export const deleteHandler: UniversalHandler<Universal.Context & { db: DatabaseS
   async (request, context, _runtime) => {
     try {
       const user = await getAuthUser(request);
-      
+
       if (!user) {
         return jsonResponse({ error: "Authentication required" }, 401);
       }
 
+      // Delete all sessions for the user first (prevent orphaned records)
+      context.db.prepare("DELETE FROM sessions WHERE user_id = ?").run(user.userId);
+
       // Delete user from database
       const result = context.db.prepare("DELETE FROM users WHERE id = ?").run(user.userId);
-      
+
       if (result.changes === 0) {
         return jsonResponse({ error: "User not found" }, 404);
       }
 
-      return jsonResponse({ 
-        success: true, 
-        message: "User deleted successfully" 
+      // Return success with cookie cleared
+      return new Response(JSON.stringify({
+        success: true,
+        message: "User deleted successfully"
+      }), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "Set-Cookie": "auth-token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+        },
       });
     } catch (error) {
       console.error("Delete user error:", error);
