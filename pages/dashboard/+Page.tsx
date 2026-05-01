@@ -1,32 +1,26 @@
-import { onMount } from "solid-js";
+import { Show } from "solid-js";
+import { useData } from "vike-solid/useData";
+import type { Data } from "./+data";
 
 export default function Page() {
-  // Client-side auth check - server middleware only runs on full page reloads
-  onMount(async () => {
-    try {
-      // Verify the token with the server
-      const response = await fetch('/api/auth/verify', {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!data.valid) {
-        // Redirect to login if token is invalid
-        window.location.href = "/login";
-      }
-    } catch (error) {
-      // If verification fails, redirect to login
-      console.error('Auth verification failed:', error);
-      window.location.href = "/login";
-    }
-  });
+  const data = useData<Data>();
+  const isAuthenticated = () => data?.isAuthenticated ?? false;
+  const user = () => data?.user;
 
   return (
+    <>
+      <Show when={isAuthenticated()} keyed fallback={
+        <div style={{
+          padding: "20px",
+          "background-color": "#ffebee",
+          "border-radius": "4px",
+          "margin-top": "20px",
+        }}>
+          <h2>Not Authenticated</h2>
+          <p>You must be logged in to view this page.</p>
+          <p><a href="/login">Go to login</a></p>
+        </div>
+      }>
     <>
       <h1>Dashboard (Protected)</h1>
       <div
@@ -37,7 +31,7 @@ export default function Page() {
           "margin-top": "20px",
         }}
       >
-        <h2>Welcome to your dashboard!</h2>
+        <h2>Welcome{user() ? `, ${user()?.username}` : ''}!</h2>
         <p>This is a protected route. You can only see this because you're authenticated.</p>
       </div>
 
@@ -53,6 +47,8 @@ export default function Page() {
         <p>✅ You are successfully authenticated via server-side cookies.</p>
         <p>The auth middleware verified your session and allowed access to this protected route.</p>
       </div>
+    </>
+      </Show>
     </>
   );
 }
