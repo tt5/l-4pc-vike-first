@@ -33,7 +33,7 @@ async function waitForLightpanda(host, port, timeoutMs = 5000) {
 
 const LIGHTPANDA_PATH = process.env.LIGHTPANDA_PATH || `${homedir()}/.cache/lightpanda-node/lightpanda`;
 
-async function testLogout() {
+async function testLoggedOutLogout() {
   const args = ['serve', '--host', lpdopts.host, '--port', lpdopts.port];
   const proc = spawn(LIGHTPANDA_PATH, args);
   await waitForLightpanda(lpdopts.host, lpdopts.port);
@@ -43,25 +43,43 @@ async function testLogout() {
   const page = await context.newPage();
 
   try {
-    console.log('[Test] Click logout button (not logged in)');
+    console.log('[Test] Visit logout page while not logged in');
 
-    // Go directly to logout page (no login)
+    // Go directly to logout page without logging in first
     await page.goto(`${BASE_URL}/logout`);
-    
-    // Click the logout button
-    await page.waitForSelector('button');
-    await page.click('button');
+    await page.waitForSelector('h2');
 
-    // Wait for navigation to complete (same as login test)
-    console.log('Waiting for navigation to complete...');
-    await page.waitForNavigation();
-    
-    const url = page.url();
-    
-    if (url === `${BASE_URL}/logout?success=true`) {
-      console.log('✓ Logout clicked, URL shows success=true');
+    // Check that the page shows "Not Logged In" message
+    const headingText = await page.evaluate(() => {
+      const h2 = document.querySelector('h2');
+      return h2 ? h2.textContent : '';
+    });
+
+    const bodyText = await page.evaluate(() => document.body.textContent);
+
+    if (headingText.includes('Not Logged In')) {
+      console.log('✓ Logout page shows "Not Logged In" for anonymous user');
     } else {
-      console.log('✗ Expected /logout?success=true, got:', url);
+      console.log('✗ Expected "Not Logged In" heading, got:', headingText);
+      process.exitCode = 1;
+    }
+
+    if (bodyText.includes('You are not currently logged in')) {
+      console.log('✓ Page shows appropriate message for non-logged-in user');
+    } else {
+      console.log('✗ Expected "not currently logged in" message');
+      process.exitCode = 1;
+    }
+
+    // Verify logout form is NOT shown
+    const hasLogoutButton = await page.evaluate(() => {
+      return document.querySelector('form[action="/api/auth/logout"]') !== null;
+    });
+
+    if (!hasLogoutButton) {
+      console.log('✓ Logout button is not shown for non-logged-in user');
+    } else {
+      console.log('✗ Logout button should not be shown for non-logged-in user');
       process.exitCode = 1;
     }
   } catch (error) {
@@ -75,4 +93,4 @@ async function testLogout() {
   }
 }
 
-testLogout();
+testLoggedOutLogout();

@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { enhance, type UniversalHandler } from "@universal-middleware/core";
 import { generateToken, getAuthUser, getTokenFromRequest, type TokenPayload } from "../lib/server/auth/jwt";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 
 // Helper function for JSON responses
 function jsonResponse(data: unknown, status = 200) {
@@ -51,6 +51,17 @@ export const loginHandler: UniversalHandler<Universal.Context & { db: DatabaseSy
         userId: userId,
         username: username,
       });
+
+      // Create server-side session
+      const sessionId = `sess_${randomBytes(16).toString("hex")}`;
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const expiresAtMs = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+      const ipAddress = request.headers.get("x-forwarded-for") || "unknown";
+      const userAgent = request.headers.get("user-agent") || "unknown";
+
+      context.db.prepare(
+        "INSERT INTO sessions (id, user_id, token_hash, expires_at_ms, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)"
+      ).run(sessionId, userId, tokenHash, expiresAtMs, ipAddress, userAgent);
 
       // Redirect to login page with cookie
       return new Response(null, {
@@ -120,9 +131,16 @@ export const registerHandler: UniversalHandler<Universal.Context & { db: Databas
   { name: "my-app:auth-register", path: "/api/auth/register", method: "POST", immutable: false },
 );
 
-// POST /api/auth/logout - Logout user (clear cookie and redirect)
-export const logoutHandler: UniversalHandler<Universal.Context> = enhance(
-  async (_request, _context, _runtime) => {
+// POST /api/auth/logout - Logout user (clear cookie, delete session, and redirect)
+export const logoutHandler: UniversalHandler<Universal.Context & { db: DatabaseSync }> = enhance(
+  async (request, context, _runtime) => {
+    // Get the token and delete the session from database
+    const token = getTokenFromRequest(request);
+    if (token) {
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      context.db.prepare("DELETE FROM sessions WHERE token_hash = ?").run(tokenHash);
+    }
+
     // Redirect to logout page with cookie cleared
     return new Response(null, {
       status: 302,
