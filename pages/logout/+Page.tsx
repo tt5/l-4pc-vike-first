@@ -1,39 +1,21 @@
-import { createSignal, createMemo, onMount, createEffect, Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
+import { useData } from "vike-solid/useData";
+import type { Data } from "./+data";
 
-interface PageProps {
-  isSuccess?: boolean;
-}
-
-export default function Page(props: PageProps) {
-  console.log('Page props:', props);
+export default function Page() {
+  const data = useData<Data>();
   const [isLoggingOut, setIsLoggingOut] = createSignal(false);
-  const [isSuccess, setIsSuccess] = createSignal(props.isSuccess || false);
-  
-  // Check URL on mount for client-side routing
-  onMount(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const success = urlParams.get('success') === 'true';
-    console.log('URL success param:', success);
-    setIsSuccess(success);
-    console.log('After setting isSuccess, new value:', success);
-  });
-  
-  console.log('isSuccess value:', isSuccess());
-  
-  // Add effect to log when isSuccess changes
-  createEffect(() => {
-    console.log('isSuccess changed to:', isSuccess());
-    console.log('DOM contains success text:', document.body.textContent.includes('Successfully logged out'));
-  });
+  const isSuccess = () => data?.isSuccess ?? false;
 
   const handleLogout = () => {
     // Clear client-side auth state before form submission
     sessionStorage.removeItem("user");
+    setIsLoggingOut(true);
   };
 
   return (
     <>
-      <Show when={isSuccess()}>
+      <Show when={isSuccess()} keyed>
         <div style={{ 
           padding: "20px", 
           "text-align": "center",
@@ -49,7 +31,7 @@ export default function Page(props: PageProps) {
         </div>
       </Show>
       
-      <Show when={!isSuccess()}>
+      <Show when={!isSuccess()} keyed>
         <div style={{ 
           padding: "20px", 
           "text-align": "center",
