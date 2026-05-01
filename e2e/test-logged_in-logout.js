@@ -143,7 +143,11 @@ async function testLoggedInLogout() {
     await page.deleteCookie({ name: 'auth-token', domain: 'localhost' });
 
     // Step 4: Navigate to logout success page and verify (SSR)
-    await page.goto(`${BASE_URL}/logout?success=true`);
+    // Use location.reload() pattern from test-testpage.js
+    await page.evaluate(() => {
+      location.href = '/logout?success=true';
+    });
+    await delay(1000);
     await page.waitForSelector('h2');
 
     const successHeading = await page.$eval('h2', el => el.textContent);
@@ -165,7 +169,10 @@ async function testLoggedInLogout() {
 
     // Step 5: Verify session is gone (navigate back to logout, should show "Not Logged In")
     console.log('[Test] Verify session was removed');
-    await page.goto(`${BASE_URL}/logout`);
+    await page.evaluate(() => {
+      location.href = '/logout';
+    });
+    await delay(1000);
     await page.waitForSelector('h2');
 
     const finalHeading = await page.$eval('h2', el => el.textContent);
