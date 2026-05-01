@@ -108,7 +108,8 @@ async function testAuthFull() {
     }
 
     console.log('\n[Step 2] Verify non-logged-in state on logout page');
-    await page.goto(`${BASE_URL}/logout`);
+    await page.evaluate(() => { location.href = '/logout'; });
+    await delay(500);
     await page.waitForSelector('h2');
 
     const logoutHeading = await page.evaluate(() => {
@@ -135,7 +136,8 @@ async function testAuthFull() {
     // STEP 2: Registration
     // =================================================================
     console.log('\n[Step 3] Register new user');
-    await page.goto(`${BASE_URL}/register`);
+    await page.evaluate(() => { location.href = '/register'; });
+    await delay(500);
     await page.waitForSelector('#reg-username');
 
     await page.type('#reg-username', testUsername);
@@ -189,7 +191,7 @@ async function testAuthFull() {
       httpOnly: true
     });
 
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.evaluate(() => { location.href = '/dashboard'; });
     await delay(500);
     await page.waitForSelector('h1');
 
@@ -224,7 +226,8 @@ async function testAuthFull() {
     }
 
     console.log('\n[Step 6] Verify authenticated state on logout page');
-    await page.goto(`${BASE_URL}/logout`);
+    await page.evaluate(() => { location.href = '/logout'; });
+    await delay(500);
     await page.waitForSelector('h2');
 
     const authLogoutHeading = await page.$eval('h2', el => el.textContent);
@@ -277,7 +280,7 @@ async function testAuthFull() {
     await page.deleteCookie({ name: 'auth-token', domain: 'localhost' });
 
     console.log('\n[Step 8] Verify session was removed');
-    await page.goto(`${BASE_URL}/logout`);
+    await page.evaluate(() => { location.href = '/logout'; });
     await delay(500);
     await page.waitForSelector('h2');
 
@@ -352,7 +355,7 @@ async function testAuthFull() {
         httpOnly: true
       });
 
-      await page.goto(`${BASE_URL}/dashboard`);
+      await page.evaluate(() => { location.href = '/dashboard'; });
       await delay(500);
       await page.waitForSelector('h2');
 
