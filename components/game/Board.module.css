@@ -1,11 +1,10 @@
-@import '../../styles/variables.css';
 
-/* Layout */
 .board {
-  width: 100%;
-  max-width: 100%;
   display: flex;
   justify-content: flex-start;
+  border: 3px solid black;
+  flex-shrink: 0;
+  width: 20rem;
 }
 
 .boardContent {
@@ -54,11 +53,9 @@
 }
 
 .grid {
-  --grid-cell-size: 50px; /* Default size, will be overridden by inline style */
-  
   display: grid;
-  grid-template-rows: repeat(var(--grid-size), var(--grid-cell-size));
-  grid-template-columns: repeat(var(--grid-size), var(--grid-cell-size));
+  grid-template-rows: repeat(14, 20px);
+  grid-template-columns: repeat(14, 20px);
   gap: var(--spacing-xs);
   gap: 1px;
   width: fit-content;

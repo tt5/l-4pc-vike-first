@@ -12,13 +12,10 @@
   background-color: var(--color-gray-200);
 }
 
-/* Note: Reset styles moved to globals.css */
-
 /* Layout */
 .layout {
   display: flex;
   max-width: var(--layout-max-width);
-  margin: auto;
 }
 
 .sidebar {

@@ -1,0 +1,12 @@
+.boardContainer {
+  flex-shrink: 0;
+  display: flex;
+}
+
+.page {
+  display: flex;
+  flex-direction: row;
+  background: lightgray;
+  flex-shrink: 0;
+  width: 50rem;
+}
