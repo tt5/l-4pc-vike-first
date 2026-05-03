@@ -359,7 +359,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
         int8_t cd = (col_diff > 0) - (col_diff < 0);   // sign of col_diff
         bool is_king_in_check = board.IsAttackedByTeamAligned(
           other_team, from_row, from_col,  // scan from piece location
-          rd, cd
+          -rd, -cd // scan in direction away from king
         );
         if (is_king_in_check) { // invalid move
           board.UndoMove();
