@@ -168,7 +168,7 @@ const Board: Component<BoardProps> = (props) => {
   const [pickedUpPiece, setPickedUpPiece] = createSignal<Piece | null>(null);
   const [isDragging, setIsDragging] = createSignal(false);
   const [currentMoveIndex, setCurrentMoveIndex] = createSignal(0);
-  const [fen, setFen] = createSignal<string>('R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-3yRyNyByKyQyByNyR3/3yPyPyPyPyPyPyPyP3/14/bRbP10gPgR/bNbP10gPgN/bBbP10gPgK/bQbP10gPgQ/bKbP10gPgB/bBbP10gPgB/bNbP10gPgN/bRbP10gPgR/14/3rPrPrPrPrPrPrPrP3/3rRrNrBrQrKrBrNrR3--,-,-,-');
+  const [fen, setFen] = createSignal<string>('R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-3yRyNyByKyQyByNyR3/3yPyPyPyPyPyPyPyP3/14/bRbP10gPgR/bNbP10gPgN/bBbP10gPgB/bQbP10gPgK/bKbP10gPgQ/bBbP10gPgB/bNbP10gPgN/bRbP10gPgR/14/3rPrPrPrPrPrPrPrP3/3rRrNrBrQrKrBrNrR3--,-,-,-');
 
   // Parse FEN and set up pieces when fen signal changes
   createEffect(on(fen, (currentFen) => {
