@@ -191,6 +191,9 @@ void CommandLine::HandleCommand(
   if (parts[0] == "d") {
     board_->PrintBoard();
     return;
+  } else if (parts[0] == "fen") {
+    std::cout << board_->ToFEN() << std::endl;
+    return;
   } else if (parts[0] == "move") {
     if (parts.size() < 2) {
       SendInvalidCommandMessage("move requires a move argument (e.g., move e2-e4)");
