@@ -11,8 +11,8 @@ import {
 import { GridCell } from './GridCell';
 
 import styles from './Board.module.css';
-import { createPoint, NamedColor, Piece, Point } from '../../types/board';
-import { PLAYER_COLORS, getColorHex, parseFen, isInNonPlayableCorner } from '../../utils/game';
+import { createPoint, NamedColor, Piece, Point, LegalMove } from '../../types/board';
+import { PLAYER_COLORS, getColorHex, parseFen, isInNonPlayableCorner, getLegalMoves } from '../../utils/game';
 
 interface BoardProps {
   gameId?: string;
@@ -26,6 +26,7 @@ const Board: Component<BoardProps> = (props) => {
   const [hoveredCell, setHoveredCell] = createSignal<Point | null>(null);
   const [pieces, setPieces] = createSignal<Piece[]>([]);
   const [pickedUpPiece, setPickedUpPiece] = createSignal<Piece | null>(null);
+  const [legalMoves, setLegalMoves] = createSignal<LegalMove[]>([]);
   const [isDragging, setIsDragging] = createSignal(false);
   const [currentMoveIndex, setCurrentMoveIndex] = createSignal(0);
   const [fen, setFen] = createSignal<string>('R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-3yRyNyByKyQyByNyR3/3yPyPyPyPyPyPyPyP3/14/bRbP10gPgR/bNbP10gPgN/bBbP10gPgB/bQbP10gPgK/bKbP10gPgQ/bBbP10gPgB/bNbP10gPgN/bRbP10gPgR/14/3rPrPrPrPrPrPrPrP3/3rRrNrBrQrKrBrNrR3--,-,-,-');
@@ -59,8 +60,18 @@ const Board: Component<BoardProps> = (props) => {
     }
     console.log(`[handlePiecePickup] ${x}, ${y}`);
     
+    const moves = getLegalMoves(piece, pieces(), { enPassantTarget: enPassantTargets() });
+    setLegalMoves(moves);
+    
     setPickedUpPiece(piece);
     setIsDragging(true);
+  };
+
+  const handlePieceDrop = () => {
+    setPickedUpPiece(null);
+    setLegalMoves([]);
+    setIsDragging(false);
+    setHoveredCell(null);
   };
 
 
@@ -98,6 +109,7 @@ const Board: Component<BoardProps> = (props) => {
               state={cellState}
               isDragging={isDragging()}
               pickedUpPiece={draggedPiece ? createPoint(draggedPiece.x,draggedPiece.y) : null}
+              legalMoves={legalMoves()}
               onHover={(hovered) => {
                 if (hovered) {
                   setHoveredCell(createPoint(x, y));

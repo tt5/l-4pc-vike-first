@@ -18,13 +18,18 @@ interface GridCellProps {
   state: CellState;
   isDragging: boolean;
   pickedUpPiece: Point | null;
+  legalMoves: { x: number; y: number }[];
   onHover: (isHovered: boolean) => void;
   onClick?: () => void;
   onPiecePickup: (point: Point) => void;
 }
 
 export const GridCell: Component<GridCellProps> = (props) => {
-  const { state, x, y, isDragging: isDraggingProp, pickedUpPiece } = props;
+  const { state, x, y, isDragging: isDraggingProp, pickedUpPiece, legalMoves } = props;
+  
+  const isValidMoveTarget = () => {
+    return legalMoves.some(move => move.x === x && move.y === y);
+  };
   const { isPiece, isHovered, id, color, pieceType } = state;
   
   const handleMouseDown = (e: MouseEvent) => {
@@ -49,6 +54,9 @@ export const GridCell: Component<GridCellProps> = (props) => {
     }
     if (isHovered && isDraggingProp && pickedUpPiece !== null) {
       classes.push(styles['valid-drop']);
+    }
+    if (isDraggingProp && isValidMoveTarget()) {
+      classes.push(styles['valid-move-target']);
     }
     return classes.join(' ');
   };
