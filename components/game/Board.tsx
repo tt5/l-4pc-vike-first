@@ -18,7 +18,7 @@ interface BoardProps {
   gameId?: string;
   onGameIdChange?: (gameId: string) => void;
   onGameUpdate?: () => void;
-  onUndo?: () => void;
+  onUndo?: (undoFn: () => void) => void;
 }
 
 
@@ -50,7 +50,7 @@ const Board: Component<BoardProps> = (props) => {
   // Expose undo function to parent component
   onMount(() => {
     if (props.onUndo) {
-      props.onUndo(undoLastMove);
+      props.onUndo(() => undoLastMove());
     }
   });
 

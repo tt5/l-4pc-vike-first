@@ -63,7 +63,7 @@ export default function Page() {
         </button>
       </div>
       <div class={styles.boardContainer}>
-        <Board onUndo={(undoFn) => { undoFunction = undoFn; }} />
+        <Board onUndo={(undoFn: () => void) => { undoFunction = undoFn; }} />
       </div>
     </div>
   );
