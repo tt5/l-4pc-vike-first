@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@fastify/formbody": "^8.0.2",
-    "@fastify/websocket": "^11.2.0",
     "@universal-middleware/core": "^0.4.17",
     "@vikejs/fastify": "^0.2.4",
     "dotenv": "^17.4.2",
