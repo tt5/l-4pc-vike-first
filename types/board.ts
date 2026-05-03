@@ -25,14 +25,7 @@ export interface Piece {
   hasMoved?: boolean;
 }
 
-type MoveType = 'normal' | 'capture' | 'castle' | 'enpassant' | 'promotion'
-
-interface SimpleMove {
-  fromX: number;
-  fromY: number;  
-  toX: number;
-  toY: number;
-}
+type MoveType = 'normal' | 'capture' | 'kcastle' | 'qcastle' | 'enpassant' | 'qpromotion'
 
 export interface Move {
   type: MoveType;
@@ -40,9 +33,9 @@ export interface Move {
   fromY: number;
   toX: number;
   toY: number;
-  rookMove: SimpleMove;
-  captured: Piece;
-  promotion: boolean;
+  captured?: Piece;
+  oldKCastleRights?: boolean;
+  oldQCastleRights?: boolean;
 }
 
 interface CapturedPiece {

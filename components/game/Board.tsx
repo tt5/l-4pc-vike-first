@@ -42,6 +42,7 @@ const Board: Component<BoardProps> = (props) => {
   createEffect(on(fen, (currentFen) => {
     const parsedPieces = parseFen(currentFen);
     setPieces(parsedPieces);
+    // update state
   }, { defer: false }));
 
   const currentPlayerColor = () => PLAYER_COLORS[currentMoveIndex() % PLAYER_COLORS.length];
