@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "board.h"
+#include "bloom_filter.h"
 #include "checkmate_table.h"
 #include "transposition_table.h"
 
@@ -197,6 +198,7 @@ class AlphaBetaPlayer {
 
   std::unique_ptr<TranspositionTable> transposition_table_;
   std::unique_ptr<CheckmateTable> checkmate_table_;
+  std::unique_ptr<BloomFilter> bloom_filter_;
   int16_t history_heuristic_[2][224][224] = {0};
 
   void ResetMobilityScores(ThreadState& thread_state, Board& board);

@@ -38,6 +38,8 @@ AlphaBetaPlayer::AlphaBetaPlayer(std::optional<PlayerOptions> options) {
   }
   // Initialize checkmate table with 10 million entries (~80MB)
   checkmate_table_ = std::make_unique<CheckmateTable>(10'000'000);
+  // Initialize bloom filter with 4MB
+  bloom_filter_ = std::make_unique<BloomFilter>(4 * 1024 * 1024);
   // history_heuristic_ is zero-initialized by default member initializer
 }
 
@@ -378,14 +380,14 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
         }
     }
 
-    /*
-    // cm_skip: Skip known checkmate positions
-    // bloom filter
-    if (checkmate_table_->Contains(board.HashKey())) {
+    // cm_skip: Skip known checkmate positions using bloom filter
+    // Bloom filter first - if it says "no", we definitely skip
+    // If it says "yes", we verify with the full checkmate table
+    if (bloom_filter_->MaybeContains(board.HashKey()) &&
+        checkmate_table_->Contains(board.HashKey())) {
       board.UndoMove();
       continue;
     }
-    */
 
     has_legal_moves = true;
 
