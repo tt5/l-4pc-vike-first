@@ -138,12 +138,21 @@ function parseFen(fen: string): Piece[] {
         col++;
         i++;
       }
-      // Multiple empty squares (number 1-14)
-      else {
-        const numEmpty = parseInt(char, 10);
+      // Multiple empty squares (number 1-14, multi-digit)
+      else if (/\d/.test(char)) {
+        let numStr = char;
+        i++;
+        while (i < rowStr.length && /\d/.test(rowStr[i])) {
+          numStr += rowStr[i];
+          i++;
+        }
+        const numEmpty = parseInt(numStr, 10);
         if (!isNaN(numEmpty) && numEmpty > 0) {
           col += numEmpty;
         }
+      }
+      // Unknown character, skip it
+      else {
         i++;
       }
     }
