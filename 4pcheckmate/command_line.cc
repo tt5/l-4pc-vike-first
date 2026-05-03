@@ -1,0 +1,433 @@
+#include "command_line.h"
+
+#include <chrono>
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <vector>
+
+#include "player.h"
+#include "transposition_table.h"
+#include "board.h"
+#include "utils.h"
+
+
+namespace chess {
+
+constexpr char kEngineName[] = "4pChess 0.1";
+constexpr char kAuthorName[] = "Louis O.";
+
+using std::chrono::milliseconds;
+using std::chrono::system_clock;
+using std::chrono::time_point;
+using std::chrono::duration_cast;
+
+namespace {
+
+std::string LowerCase(const std::string& s) {
+  std::string lower;
+  for (char c : s) {
+    lower += std::tolower(c);
+  }
+  return lower;
+}
+
+std::string GetPVStr(const AlphaBetaPlayer& player) {
+  std::string pv;
+  const PVInfo* pv_info = &player.GetPVInfo();
+  while (pv_info != nullptr) {
+    auto best_move = pv_info->GetBestMove();
+    if (best_move.has_value()) {
+      if (!pv.empty()) {
+        pv += " ";
+      }
+      pv += best_move->PrettyStr();
+    }
+    pv_info = pv_info->GetChild().get();
+  }
+  return pv;
+}
+
+}  // namespace
+
+CommandLine::CommandLine() {
+  // Initialize the board with standard setup
+  board_ = Board::CreateStandardSetup();
+}
+
+void CommandLine::Run() {
+  // Runs on main thread
+  player_ = std::make_shared<AlphaBetaPlayer>(player_options_);
+  ResetBoard();
+  while (running_) {
+    std::string line;
+    std::getline(std::cin, line);
+    std::vector<std::string> parts = SplitStrOnWhitespace(line);
+    HandleCommand(line, parts);
+  }
+}
+
+void CommandLine::SetBoard(std::shared_ptr<Board> board) {
+  std::lock_guard lock(mutex_);
+  board_ = board;
+}
+
+void CommandLine::StopEvaluation() {
+  std::lock_guard lock(mutex_);
+  if (thread_ != nullptr) {
+    if (player_ != nullptr) {
+      player_->SetCanceled(true);
+    }
+    thread_->join();
+    thread_.reset();
+    if (player_ != nullptr) {
+      player_->SetCanceled(false);
+    }
+  }
+}
+
+void CommandLine::ResetBoard() {
+  std::lock_guard lock(mutex_);
+  board_ = Board::CreateStandardSetup();
+}
+
+void CommandLine::SetEvaluationOptions(const EvaluationOptions& options) {
+  std::lock_guard lock(mutex_);
+  options_ = options;
+}
+
+void CommandLine::StartEvaluation() {
+  std::lock_guard lock(mutex_);
+  thread_ = std::make_unique<std::thread>([this]() {
+    int depth = 1;
+    std::shared_ptr<Board> board;
+    std::shared_ptr<AlphaBetaPlayer> player;
+    EvaluationOptions options;
+    {
+      std::lock_guard lock(mutex_);
+      if (board_ == nullptr || player_ == nullptr) {
+        // Should never happen.
+        SendInfoMessage("Haven't set up board -- can't evaluate.");
+        return;
+      }
+      board = board_;
+      player = player_;
+      options = options_;
+    }
+
+    auto start = system_clock::now();
+    int num_eval_start = player->GetNumEvaluations();
+    std::optional<Move> best_move;
+
+    std::optional<milliseconds> time_limit;
+
+    while (!player->IsCanceled()
+           && (!options.depth.has_value() || depth <= *options.depth)
+           && depth < 100) {
+      // start again from the same board position
+      auto res = player->MakeMove(*board, depth);
+
+      if (res.has_value()) {
+        auto duration_ms = duration_cast<milliseconds>(
+            system_clock::now() - start);
+        int num_evals = player->GetNumEvaluations() - num_eval_start;
+        std::optional<int> nps;
+        if (duration_ms.count() > 0) {
+          nps = (int) (((float)num_evals) / (duration_ms.count() / 1000.0));
+        }
+        int score_centipawn = std::get<0>(*res);
+        if (board->GetTurn().GetTeam() == BLUE_GREEN) {
+          score_centipawn = -score_centipawn;
+        }
+        std::string pv = GetPVStr(*player);
+
+        std::cout
+          << "info"
+          << " depth " << depth
+          << " time " << duration_ms.count()
+          << " nodes " << num_evals
+          << " pv " << pv
+          << " score " << score_centipawn;
+        if (nps.has_value()) {
+          std::cout << " nps " << *nps;
+        }
+        std::cout << std::endl;
+
+        best_move = std::get<1>(*res);
+
+        if (std::abs(score_centipawn) == kMateValue) {
+          std::cout << "checkmate score" << std::endl;
+          abort();
+        }
+
+      } else {
+        break;
+      }
+
+      depth++;
+    }
+
+    if (best_move.has_value()) {
+      std::cout << "bestmove " << best_move->PrettyStr() << std::endl;
+      best_move = std::nullopt;
+    }
+
+  });
+}
+
+void CommandLine::HandleCommand(
+    const std::string& line,
+    const std::vector<std::string>& parts) {
+  if (parts.empty()) {
+    return;
+  }
+
+  if (parts[0] == "d") {
+    board_->PrintBoard();
+    return;
+  } else if (parts[0] == "fen") {
+    std::cout << board_->ToFEN() << std::endl;
+    return;
+  } else if (parts[0] == "move") {
+    if (parts.size() < 2) {
+      SendInvalidCommandMessage("move requires a move argument (e.g., move e2-e4)");
+      return;
+    }
+    std::lock_guard lock(mutex_);
+    if (board_ == nullptr) {
+      SendInfoMessage("No board set up");
+      return;
+    }
+    auto move_or = ParseMove(*board_, parts[1]);
+    if (!move_or.has_value()) {
+      SendInfoMessage("Invalid move: " + parts[1]);
+      return;
+    }
+    board_->MakeMove(*move_or);
+    return;
+  } else if (parts[0] == "undo") {
+    std::lock_guard lock(mutex_);
+    if (board_ == nullptr) {
+      SendInfoMessage("No board set up");
+      return;
+    }
+    board_->UndoMove();
+    return;
+  } else if (parts[0] == "checkmate_discovery") {
+    // Checkmate discovery mode
+    int max_checkmates = 100;
+    std::string output_file = "checkmates.txt";
+
+    // Parse optional parameters
+    for (size_t i = 1; i < parts.size(); i++) {
+      if (parts[i] == "--max-checkmates" && i + 1 < parts.size()) {
+        auto val = ParseInt(parts[i + 1]);
+        if (val.has_value() && *val > 0) {
+          max_checkmates = *val;
+          i++;
+        }
+      } else if (parts[i] == "--output-file" && i + 1 < parts.size()) {
+        output_file = parts[i + 1];
+        i++;
+      }
+    }
+
+    std::cout << "Starting checkmate discovery mode..." << std::endl;
+    std::cout << "Max checkmates: " << max_checkmates << std::endl;
+    std::cout << "Output file: " << output_file << std::endl;
+
+    // Enable checkmate discovery mode
+    player_options_.checkmate_discovery_mode = true;
+    player_options_.max_checkmates_to_discover = max_checkmates;
+    player_options_.checkmate_output_file = output_file;
+
+    // Recreate player with new options
+    StopEvaluation();
+    player_ = std::make_shared<AlphaBetaPlayer>(player_options_);
+
+    // Reset to starting position
+    ResetBoard();
+
+    // Run search with infinite depth
+    EvaluationOptions options;
+    options.infinite = true;
+    SetEvaluationOptions(options);
+    StartEvaluation();
+
+    return;
+  }
+  const auto& command = parts[0];
+  if (command == "uci") {
+    std::cout << "id name " << kEngineName << std::endl;
+    std::cout << "id author " << kAuthorName << std::endl;
+
+    // Allowed options
+    std::cout << "option name Hash type spin default 100"
+      << std::endl; // size in MB
+    std::cout << "option name UCI_ShowCurrLine type check default false"
+      << std::endl;
+
+    std::cout << "uciok" << std::endl;
+  } else if (command == "isready") {
+    std::cout << "readyok" << std::endl;
+  } else if (command == "setoption") {
+    if (parts.size() != 5) {
+      SendInvalidCommandMessage(line);
+      return;
+    }
+    std::string option_name = LowerCase(parts[2]);
+    const auto& option_value = parts[4];
+    if (option_name == "hash") {
+      auto val = ParseInt(option_value);
+      if (val.has_value()) {
+        if (*val < 0) {
+          SendInvalidCommandMessage(
+              "Hash MB must be non-negative, given: " + option_value);
+          return;
+        }
+        size_t size = *val * 1000000 / sizeof(HashTableEntry);
+        if (size != player_options_.transposition_table_size) {
+          player_options_.transposition_table_size = size;
+          player_ = std::make_shared<AlphaBetaPlayer>(player_options_);
+        }
+      } else {
+        SendInvalidCommandMessage("Can not parse int: " + option_value);
+        return;
+      }
+    } else if (option_name == "uci_showcurrline") {
+      if (option_value == "true") {
+        show_current_line_ = true;
+      } else if (option_value == "false") {
+        show_current_line_ = false;
+      } else {
+        SendInvalidCommandMessage(
+              "UCI_ShowCurrLine option value must be 'true' or "
+              "'false', given: " + option_value);
+        return;
+      }
+    } else {
+      SendInvalidCommandMessage("Unrecognized option: " + option_name);
+      return;
+    }
+    StopEvaluation();
+
+  } else if (command == "ucinewgame") {
+    // stop evaluation, if any, and create a new player / board
+    StopEvaluation();
+    ResetBoard();
+  } else if (command == "position") {
+
+    if (parts.size() < 2) {
+      SendInvalidCommandMessage(line);
+      return;
+    }
+
+    size_t next_pos = 1;
+    std::shared_ptr<Board> board;
+
+    if (parts[1] == "fen") {
+      if (parts.size() < 3) {
+        SendInvalidCommandMessage(line);
+      }
+      const auto& fen = parts[2];
+      board = ParseBoardFromFEN(fen);
+      if (board == nullptr) {
+        SendInfoMessage("Invalid FEN: " + fen);
+        return;
+      }
+      next_pos += 2;
+    } else {
+      if (parts[1] == "startpos") {
+        next_pos += 1;
+      }
+      board = Board::CreateStandardSetup();
+    }
+
+    if (parts.size() < next_pos + 1) {
+      // Invalid, but we'll accept it
+      StopEvaluation();
+      SetBoard(std::move(board));
+      return;
+    }
+    if (parts[next_pos] != "moves") {
+      SendInvalidCommandMessage(line);
+      return;
+    }
+
+    next_pos++;
+    for (size_t i = next_pos; i < parts.size(); i++) {
+      const auto& move_str = parts[i];
+      std::optional<Move> move_or = ParseMove(*board, move_str);
+      if (!move_or.has_value()) {
+        SendInfoMessage("Invalid move '" + move_str + "'");
+        return;
+      }
+      board->MakeMove(*move_or);
+    }
+
+    StopEvaluation();
+    SetBoard(std::move(board));
+
+  } else if (command == "go") {
+    // parse all options and then execute a search
+
+    size_t cmd_id = 1;
+    EvaluationOptions options;
+
+    // integer options
+    std::unordered_map<std::string, std::optional<int>*>
+      option_name_to_value;
+    option_name_to_value["rtime"] = &options.red_time;
+    option_name_to_value["btime"] = &options.blue_time;
+    option_name_to_value["ytime"] = &options.yellow_time;
+    option_name_to_value["depth"] = &options.depth;
+    option_name_to_value["mate"] = &options.mate;
+
+    while (cmd_id < parts.size()) {
+      const auto& option_name = parts[cmd_id];
+
+      if (option_name_to_value.find(option_name)
+          != option_name_to_value.end()) {
+        if (parts.size() < cmd_id + 2) {
+          SendInvalidCommandMessage(line);
+          return;
+        }
+        const auto& int_str = parts[cmd_id + 1];
+        auto* value = option_name_to_value[option_name];
+        *value = ParseInt(int_str);
+        if (!value->has_value()) {
+          SendInvalidCommandMessage("Can not parse integer: {}" + int_str);
+        }
+        cmd_id += 2;
+      } else if (option_name == "infinite") { 
+        options.infinite = true;
+        cmd_id++;
+      }
+
+    }
+
+    StopEvaluation();
+    SetEvaluationOptions(options);
+    StartEvaluation();
+
+  } else if (command == "stop") {
+    // cancel current search, if any
+    StopEvaluation();
+  } else if (command == "quit") {
+    // exit the program
+    StopEvaluation();
+    running_ = false;
+  } else {
+    SendInvalidCommandMessage(line);
+  }
+}
+
+
+}  // namespace chess
+
