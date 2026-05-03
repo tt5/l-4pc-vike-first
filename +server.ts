@@ -3,13 +3,10 @@ import { dbMiddleware } from "./server/db-middleware";
 import { authMiddleware } from "./server/auth-middleware";
 import { loginHandler, registerHandler, logoutHandler, verifyHandler, deleteHandler } from "./server/auth-handlers";
 import { getCounterHandler, incrementCounterHandler, resetCounterHandler } from "./server/counter-handlers";
-import { handleEngineConnection } from "./server/engine-handlers";
 import vike, { toFetchHandler } from "@vikejs/fastify";
-import fastify, { type FastifyInstance } from "fastify";
+import fastify from "fastify";
 import rawBody from "fastify-raw-body";
 import type { Server } from "vike/types";
-import type { WebSocket } from "ws";
-
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 async function getHandler() {
@@ -23,17 +20,6 @@ async function getHandler() {
 
   // Add support for form-data parsing
   await app.register(import('@fastify/formbody'));
-
-  // Register WebSocket plugin
-  await app.register(import('@fastify/websocket'));
-
-  // Register engine WebSocket route
-  app.register(async function (fastifyInstance: FastifyInstance) {
-    fastifyInstance.get('/ws/engine', { websocket: true }, (socket: WebSocket) => {
-      // socket is the WebSocket from the 'ws' library
-      handleEngineConnection(socket);
-    });
-  });
 
   await vike(app, [
     // Make database available in Context as `context.db`
