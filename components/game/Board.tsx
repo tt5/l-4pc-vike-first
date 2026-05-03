@@ -169,6 +169,13 @@ const Board: Component<BoardProps> = (props) => {
   const [isDragging, setIsDragging] = createSignal(false);
   const [currentMoveIndex, setCurrentMoveIndex] = createSignal(0);
   const [fen, setFen] = createSignal<string>('R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-3yRyNyByKyQyByNyR3/3yPyPyPyPyPyPyPyP3/14/bRbP10gPgR/bNbP10gPgN/bBbP10gPgB/bQbP10gPgK/bKbP10gPgQ/bBbP10gPgB/bNbP10gPgN/bRbP10gPgR/14/3rPrPrPrPrPrPrPrP3/3rRrNrBrQrKrBrNrR3--,-,-,-');
+  const [enPassantTargets, setEnPassantTargets] = createSignal<Record<NamedColor, {x: number, y: number, color: NamedColor} | null>>({
+    'RED': null,
+    'YELLOW': null,
+    'BLUE': null,
+    'GREEN': null
+  });
+
 
   // Parse FEN and set up pieces when fen signal changes
   createEffect(on(fen, (currentFen) => {
@@ -190,6 +197,7 @@ const Board: Component<BoardProps> = (props) => {
     if (color !== currentTurnColor) {
       return;
     }
+    console.log(`[handlePiecePickup] ${x}, ${y}`);
     
     setPickedUpPiece(piece);
     setIsDragging(true);

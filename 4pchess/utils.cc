@@ -109,17 +109,17 @@ std::shared_ptr<Board> ParseBoardFromFEN(const std::string& fen) {
   // 2-3: Castling rights
   // 4: Points (unused)
   // 5: Halfmove clock (unused)
-  // 6 (optional?): En-passant
-  // 7: Piece placement
+  // 6: Piece placement
+  // 7 (optional?): En-passant
 
   const auto& player_str = parts[0];
   const auto& castling_availability_kingside = parts[2];
   const auto& castling_availability_queenside = parts[3];
-  const auto& piece_placement = parts.back();
+  const auto& piece_placement = parts[6];
 
   std::string enpassant;
   if (parts.size() == 8) {
-    enpassant = parts[6];
+    enpassant = parts[7];
   }
 
   // Parse player
