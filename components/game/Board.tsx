@@ -19,6 +19,8 @@ interface BoardProps {
   onGameIdChange?: (gameId: string) => void;
   onGameUpdate?: () => void;
   onUndo?: (undoFn: () => void) => void;
+  onMove?: (moveNotation: string) => void;
+  onUndoMove?: () => void;
 }
 
 
@@ -70,6 +72,20 @@ const Board: Component<BoardProps> = (props) => {
   });
 
   const currentPlayerColor = () => PLAYER_COLORS[currentMoveIndex() % PLAYER_COLORS.length];
+
+  // Convert board coordinates to engine algebraic notation
+  // x: 0-13 -> files a-n, y: 0-13 -> ranks 14-1 (inverted)
+  const toEngineNotation = (x: number, y: number): string => {
+    const files = 'abcdefghijklmn'; // 14 files for 4-player chess
+    const file = files[x];
+    const rank = 14 - y; // Invert: row 0 = rank 14, row 13 = rank 1
+    return `${file}${rank}`;
+  };
+
+  // Get move notation in engine format: "e2-e4"
+  const getMoveNotation = (fromX: number, fromY: number, toX: number, toY: number): string => {
+    return `${toEngineNotation(fromX, fromY)}-${toEngineNotation(toX, toY)}`;
+  };
 
   const handlePiecePickup = (point: Point) => {
     const [x, y] = point;
@@ -216,6 +232,10 @@ const Board: Component<BoardProps> = (props) => {
     
     // Advance turn
     setCurrentMoveIndex(prev => prev + 1);
+    
+    // Notify parent component of the move
+    const moveNotation = getMoveNotation(piece.x, piece.y, target[0], target[1]);
+    props.onMove?.(moveNotation);
   };
 
   const getRookMoveForCastle = (color: NamedColor, castleType: 'KING_SIDE' | 'QUEEN_SIDE') => {
@@ -346,6 +366,9 @@ const Board: Component<BoardProps> = (props) => {
         'GREEN': null
       });
     });
+    
+    // Notify parent component of the undo
+    props.onUndoMove?.();
   };
 
 

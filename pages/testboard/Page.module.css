@@ -35,4 +35,26 @@
   display: flex;
 }
 
+.mainContent {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.analysisContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  min-width: 280px;
+  max-width: 350px;
+}
+
+.connectionStatus {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
 
