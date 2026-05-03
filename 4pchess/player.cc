@@ -37,7 +37,7 @@ AlphaBetaPlayer::AlphaBetaPlayer(std::optional<PlayerOptions> options) {
     transposition_table_ = std::make_unique<TranspositionTable>(options_.transposition_table_size);
   }
   // Initialize checkmate table with 10 million entries (~80MB)
-  checkmate_table_ = std::make_unique<CheckmateTable>(1'000'000);
+  checkmate_table_ = std::make_unique<CheckmateTable>(10'000'000);
   // history_heuristic_ is zero-initialized by default member initializer
 }
 
@@ -378,11 +378,14 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
         }
     }
 
+    /*
     // cm_skip: Skip known checkmate positions
+    // bloom filter
     if (checkmate_table_->Contains(board.HashKey())) {
       board.UndoMove();
       continue;
     }
+    */
 
     has_legal_moves = true;
 

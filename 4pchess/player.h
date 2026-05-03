@@ -34,8 +34,8 @@ class PVInfo {
   std::shared_ptr<PVInfo> child_ = nullptr;
 };
 
-constexpr size_t kTranspositionTableSize = 2'000'000;
-constexpr int kMaxPly = 300;
+constexpr size_t kTranspositionTableSize = 512'000;
+constexpr int kMaxPly = 200;
 constexpr int kKillersPerPly = 3;
 
 struct PlayerOptions {
@@ -98,8 +98,8 @@ enum NodeType {
   Root,
 };
 
-constexpr size_t kBufferPartitionSize = 512; // number of elements per buffer partition
-constexpr size_t kBufferNumPartitions = 1000; // number of recursive calls
+constexpr size_t kBufferPartitionSize = 256; // number of elements per buffer partition
+constexpr size_t kBufferNumPartitions = 500; // number of recursive calls
 
 // Manages state of worker threads during search
 class ThreadState {
