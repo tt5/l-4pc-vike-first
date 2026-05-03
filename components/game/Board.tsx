@@ -11,7 +11,7 @@ import {
 import { GridCell } from './GridCell';
 
 import styles from './Board.module.css';
-import { Color, createPoint, HexColor, Piece, Point } from '../../types/board';
+import { Color, createPoint, HexColor, NamedColor, Piece, PieceType, Point } from '../../types/board';
 
 interface BoardProps {
   gameId?: string;
@@ -69,6 +69,89 @@ export function getColorHex(color: Color | undefined): HexColor | undefined {
   return COLOR_MAP[color];
 }
 
+const COLOR_MAP_FEN: Record<string, NamedColor> = {
+  'r': 'RED',
+  'b': 'BLUE',
+  'y': 'YELLOW',
+  'g': 'GREEN'
+};
+
+const PIECE_TYPE_MAP_FEN: Record<string, PieceType> = {
+  'P': 'pawn',
+  'R': 'rook',
+  'N': 'knight',
+  'B': 'bishop',
+  'Q': 'queen',
+  'K': 'king'
+};
+
+function getTeamFromColor(color: NamedColor): 1 | 2 {
+  return color === 'RED' || color === 'YELLOW' ? 1 : 2;
+}
+
+function parseFen(fen: string): Piece[] {
+  const parts = fen.split('-');
+  if (parts.length < 7) {
+    console.error('Invalid FEN: not enough parts');
+    return [];
+  }
+
+  const piecePlacement = parts[6];
+  const rows = piecePlacement.split('/');
+
+  if (rows.length !== 14) {
+    console.error('Invalid FEN: expected 14 rows, got', rows.length);
+    return [];
+  }
+
+  const pieces: Piece[] = [];
+  let pieceId = 0;
+
+  for (let row = 0; row < 14; row++) {
+    const rowStr = rows[row];
+    let col = 0;
+    let i = 0;
+
+    while (i < rowStr.length && col < 14) {
+      const char = rowStr[i];
+
+      // Check if it's a color letter (r/b/y/g) followed by piece letter
+      if (COLOR_MAP_FEN[char] && i + 1 < rowStr.length) {
+        const pieceType = PIECE_TYPE_MAP_FEN[rowStr[i + 1]];
+        const color = COLOR_MAP_FEN[char];
+
+        if (pieceType && color) {
+          pieces.push({
+            id: pieceId++,
+            x: col,
+            y: row,
+            color,
+            pieceType,
+            team: getTeamFromColor(color)
+          });
+          col++;
+        }
+        i += 2;
+      }
+      // Single empty square marked with x
+      else if (char === 'x') {
+        col++;
+        i++;
+      }
+      // Multiple empty squares (number 1-14)
+      else {
+        const numEmpty = parseInt(char, 10);
+        if (!isNaN(numEmpty) && numEmpty > 0) {
+          col += numEmpty;
+        }
+        i++;
+      }
+    }
+  }
+
+  return pieces;
+}
+
 const Board: Component<BoardProps> = (props) => {
 
   const [hoveredCell, setHoveredCell] = createSignal<Point | null>(null);
@@ -76,14 +159,20 @@ const Board: Component<BoardProps> = (props) => {
   const [pickedUpPiece, setPickedUpPiece] = createSignal<Piece | null>(null);
   const [isDragging, setIsDragging] = createSignal(false);
   const [currentMoveIndex, setCurrentMoveIndex] = createSignal(0);
-  const [fen, setFen] = createSignal<string>('R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-3yRyNyByKyQyByNyR3/3yPyPyPyPyPyPyPyP3/14/bRbP10gPgR/bNbP10gPgN/bBbP10gPgB/bQbP10gPgK/bKbP10gPgQ/bBbP10gPgB/bNbP10gPgN/bRbP10gPgR/14/3rPrPrPrPrPrPrPrP3/3rRrNrBrQrKrBrNrR3--,-,-,-');
+  const [fen, setFen] = createSignal<string>('R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-3yRyNyByKyQyByNyR3/3yPyPyPyPyPyPyPyP3/14/bRbP10gPgR/bNbP10gPgN/bBbP10gPgK/bQbP10gPgQ/bKbP10gPgB/bBbP10gPgB/bNbP10gPgN/bRbP10gPgR/14/3rPrPrPrPrPrPrPrP3/3rRrNrBrQrKrBrNrR3--,-,-,-');
+
+  // Parse FEN and set up pieces when fen signal changes
+  createEffect(on(fen, (currentFen) => {
+    const parsedPieces = parseFen(currentFen);
+    setPieces(parsedPieces);
+  }, { defer: false }));
 
   const currentPlayerColor = () => PLAYER_COLORS[currentMoveIndex() % PLAYER_COLORS.length];
 
   const handlePiecePickup = (point: Point) => {
     const [x, y] = point;
     
-    const piece = pieces().find(bp => bp.x === x && bp.y === y);
+    const piece = pieces().find(p => p.x === x && p.y === y);
     if (!piece) return;
     
     const currentTurnColor = currentPlayerColor();
