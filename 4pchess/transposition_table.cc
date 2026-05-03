@@ -3,8 +3,37 @@
 #include <iostream>
 
 #include "transposition_table.h"
+#include "player.h"
 
 namespace chess {
+
+// Score packing constants for int16_t storage
+constexpr int kMateScoreBase = 30000;
+constexpr int kMaxStoredScore = 32700;
+
+int HashTableEntry::GetScore() const {
+  int s = score;
+  if (s >= kMateScoreBase - 1000) {
+    return kMateValue - (kMateScoreBase - s);
+  } else if (s <= -kMateScoreBase + 1000) {
+    return -kMateValue + (-kMateScoreBase - s);
+  }
+  return s;
+}
+
+void HashTableEntry::SetScore(int s) {
+  if (s >= kMateValue - 1000) {
+    int distance = kMateValue - s;
+    score = static_cast<int16_t>(kMateScoreBase - distance);
+  } else if (s <= -kMateValue + 1000) {
+    int distance = -kMateValue - s;
+    score = static_cast<int16_t>(-kMateScoreBase - distance);
+  } else {
+    if (s > kMaxStoredScore) s = kMaxStoredScore;
+    if (s < -kMaxStoredScore) s = -kMaxStoredScore;
+    score = static_cast<int16_t>(s);
+  }
+}
 
 TranspositionTable::TranspositionTable(size_t table_size) {
   assert((table_size > 0) && "transposition table_size = 0");
@@ -35,20 +64,20 @@ void TranspositionTable::Save(
   HashTableEntry& entry = hash_table_[n];
   if (bound == EXACT
       || entry.key != key
-      || entry.depth <= depth
-      || entry.generation != generation_) { // Replace old generation entries
+      || entry.depth() <= static_cast<uint8_t>(depth)
+      || entry.generation() != generation_) { // Replace old generation entries
     entry.key = key;
-    entry.depth = depth;
+    entry.set_depth(static_cast<uint8_t>(depth));
     if (move.has_value()) {
       entry.packed_move = move->Pack();
     } else {
       entry.packed_move = 0;  // 0 means no move
     }
-    entry.score = score;
-    entry.eval = eval;
-    entry.bound = bound;
-    entry.is_pv = is_pv;
-    entry.generation = generation_;
+    entry.SetScore(score);
+    entry.eval = static_cast<int8_t>(eval);
+    entry.set_bound(bound);
+    entry.set_is_pv(is_pv);
+    entry.set_generation(generation_);
   }
 }
 
@@ -67,13 +96,11 @@ void TranspositionTable::Merge(const TranspositionTable& source) {
       // Only add completely new entries - don't touch existing entries
       if (entry.key == 0) {
         entry.key = src_entry.key;
-        entry.depth = src_entry.depth;
+        entry.gen_depth = src_entry.gen_depth;  // Copy packed depth+generation
         entry.packed_move = src_entry.packed_move;
         entry.score = src_entry.score;
         entry.eval = src_entry.eval;
-        entry.bound = src_entry.bound;
-        entry.is_pv = src_entry.is_pv;
-        entry.generation = generation_;
+        entry.set_generation(generation_);
       }
     }
   }

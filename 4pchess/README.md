@@ -13,3 +13,7 @@ quit
 
 `d`
 `fen`
+
+---
+
+score, eval redundant?

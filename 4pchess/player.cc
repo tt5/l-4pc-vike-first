@@ -146,22 +146,22 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   if (tte != nullptr) {
     if (tte->key == key) { // valid entry
       tt_hit = true;
-      if (tte->depth >= depth) {
+      if (tte->depth() >= depth) {
         // at non-PV nodes check for an early TT cutoff
         if (!is_root_node
             && !is_pv_node
-            && (tte->bound == EXACT
-              || (tte->bound == LOWER_BOUND && tte->score >= beta)
-              || (tte->bound == UPPER_BOUND && tte->score <= alpha))
+            && (tte->bound() == EXACT
+              || (tte->bound() == LOWER_BOUND && tte->GetScore() >= beta)
+              || (tte->bound() == UPPER_BOUND && tte->GetScore() <= alpha))
             ) {
 
           if (tte->packed_move != 0) {
               return std::make_tuple(
-                  std::min(beta, std::max(alpha, tte->score)),
+                  std::min(beta, std::max(alpha, tte->GetScore())),
                   Move::Unpack(tte->packed_move, board));
           }
           return std::make_tuple(
-            std::min(beta, std::max(alpha, tte->score)), std::nullopt);
+            std::min(beta, std::max(alpha, tte->GetScore())), std::nullopt);
         }
       }
       if (tte->packed_move != 0) {
@@ -194,7 +194,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
   int eval = 0;
   if (tt_hit) {
-    if (tte->bound == UPPER_BOUND) {
+    if (tte->bound() == UPPER_BOUND) {
       eval = board.PieceEvaluation();
       eval = maximizing_player ? eval : -eval;
     } else {
@@ -404,12 +404,12 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
     if (depth >= 5
         && tt_hit
-        && (tte->bound == LOWER_BOUND)
-        && tte->depth >= depth >> 1
+        && (tte->bound() == LOWER_BOUND)
+        && tte->depth() >= depth >> 1
         ) {
       num_singular_extension_searches_++;
       
-      int beta = tte->score;
+      int beta = tte->GetScore();
 
       PVInfo pvinfo;
       auto res = Search(ss, NonPV, thread_state, board, ply+1,
