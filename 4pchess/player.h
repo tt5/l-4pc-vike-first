@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "board.h"
+#include "checkmate_table.h"
 #include "transposition_table.h"
 
 namespace chess {
@@ -195,6 +196,7 @@ class AlphaBetaPlayer {
       int max_depth = 20);
 
   std::unique_ptr<TranspositionTable> transposition_table_;
+  std::unique_ptr<CheckmateTable> checkmate_table_;
   int16_t history_heuristic_[2][224][224] = {0};
 
   void ResetMobilityScores(ThreadState& thread_state, Board& board);
