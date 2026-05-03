@@ -22,6 +22,7 @@ export interface Piece {
   color: NamedColor;
   pieceType: PieceType;
   team: 1 | 2; // 1 for team 1 (red/yellow), 2 for team 2 (blue/green)
+  hasMoved?: boolean;
 }
 
 type MoveType = 'normal' | 'capture' | 'castle' | 'enpassant' | 'promotion'
@@ -42,4 +43,21 @@ export interface Move {
   rookMove: SimpleMove;
   captured: Piece;
   promotion: boolean;
+}
+
+interface CapturedPiece {
+    x: number;
+    y: number;
+    color: NamedColor;
+    pieceType: PieceType;
+}
+
+export interface LegalMove {
+  x: number;
+  y: number;
+  canCapture: boolean;
+  isCastle?: boolean;
+  castleType?: 'KING_SIDE' | 'QUEEN_SIDE' | null;
+  isEnPassant?: boolean;
+  capturedPiece?: CapturedPiece;
 }
