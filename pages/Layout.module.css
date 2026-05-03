@@ -4,12 +4,11 @@
 }
 
 .sidebarLink {
-  padding: var(--space-1) var(--space-3);
-  margin-left: calc(-1 * var(--space-3));
+  border: 3px solid red;
 }
 
 .sidebarLinkActive {
-  background-color: var(--color-gray-200);
+  background-color: var(--color-primary);
 }
 
 /* Layout */
@@ -19,21 +18,16 @@
 }
 
 .sidebar {
-  padding: var(--space-5);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   line-height: 1.8em;
-  border-right: 2px solid var(--color-border);
 }
 
 .logo {
-  margin-top: var(--space-5);
-  margin-bottom: var(--space-3);
+  background: lightgray;
 }
 
 .pageContent {
-  padding: var(--space-5);
-  padding-bottom: var(--space-12);
   min-height: 100vh;
 }

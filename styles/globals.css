@@ -50,16 +50,13 @@
   --line-height-tight: 1.25;
 
   /* Spacing */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --space-16: 64px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 32px;
+  --space-4: 48px;
+  --space-5: 80px;
+  --space-6: 128px;
+  --space-8: 208px;
 
   /* Layout */
   --layout-max-width: 1920px;

@@ -1,15 +1,15 @@
-import { type Component, JSX } from 'solid-js';
+import { type Component } from 'solid-js';
 import styles from './GridCell.module.css';
 import { createPoint, type Point } from '../../types/board';
 import { King, Queen, Pawn, Bishop, Knight, Rook } from './ChessPieces';
 
 interface CellState {
-  isBasePoint: boolean;
+  isPiece: boolean;
   isHovered: boolean;
-  isNonPlayable?: boolean; // Indicates if the square is in a non-playable corner
-  id?: number; // ID of the piece
-  color?: string; // Optional color for the base point
-  pieceType?: string; // Type of the piece (e.g., 'pawn', 'queen')
+  isNonPlayable?: boolean;
+  id?: number;
+  color?: string;
+  pieceType?: string;
 }
 
 interface GridCellProps {
@@ -17,19 +17,19 @@ interface GridCellProps {
   y: number;
   state: CellState;
   isDragging: boolean;
-  pickedUpBasePoint: Point | null;
+  pickedUpPiece: Point | null;
   onHover: (isHovered: boolean) => void;
   onClick?: () => void;
-  onBasePointPickup: (point: Point) => void;
+  onPiecePickup: (point: Point) => void;
 }
 
 export const GridCell: Component<GridCellProps> = (props) => {
-  const { state, x, y, isDragging: isDraggingProp, pickedUpBasePoint } = props;
-  const { isBasePoint, isHovered, id, color, pieceType } = state;
+  const { state, x, y, isDragging: isDraggingProp, pickedUpPiece } = props;
+  const { isPiece, isHovered, id, color, pieceType } = state;
   
   const handleMouseDown = (e: MouseEvent) => {
-    if (isBasePoint) {
-      props.onBasePointPickup(createPoint(x, y));
+    if (isPiece) {
+      props.onPiecePickup(createPoint(x, y));
       e.stopPropagation();
     }
   };
@@ -42,12 +42,12 @@ export const GridCell: Component<GridCellProps> = (props) => {
 
   const squareClass = () => {
     const classes = [styles.square];
-    if (isBasePoint) classes.push(styles.basePoint);
+    if (isPiece) classes.push(styles.basePoint);
     if (state.isNonPlayable) classes.push(styles.nonPlayable)
-    if (isDraggingProp && pickedUpBasePoint && isBasePoint) {
+    if (isDraggingProp && pickedUpPiece && isPiece) {
       classes.push(styles.dragging);
     }
-    if (isHovered && isDraggingProp && pickedUpBasePoint !== null) {
+    if (isHovered && isDraggingProp && pickedUpPiece !== null) {
       classes.push(styles['valid-drop']);
     }
     return classes.join(' ');
@@ -62,7 +62,7 @@ export const GridCell: Component<GridCellProps> = (props) => {
       onMouseLeave={() => props.onHover(false)}
       onClick={props.onClick}
     >
-      {isBasePoint ? (
+      {isPiece ? (
         <div 
           class={`${styles.basePoint} ${styles.basePointMarker}`}
           style={{ 'background-color': state.color, '--piece-color': state.color}}

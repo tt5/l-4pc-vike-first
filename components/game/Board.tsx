@@ -80,20 +80,20 @@ const Board: Component<BoardProps> = (props) => {
 
   const currentPlayerColor = () => PLAYER_COLORS[currentMoveIndex() % PLAYER_COLORS.length];
 
-  const handleBasePointPickup = (point: Point) => {
+  const handlePiecePickup = (point: Point) => {
     const [x, y] = point;
     
-    const basePoint = pieces().find(bp => bp.x === x && bp.y === y);
-    if (!basePoint) return;
+    const piece = pieces().find(bp => bp.x === x && bp.y === y);
+    if (!piece) return;
     
     const currentTurnColor = currentPlayerColor();
-    const color = basePoint.color;
+    const color = piece.color;
     
     if (color !== currentTurnColor) {
       return;
     }
     
-    setPickedUpPiece(basePoint);
+    setPickedUpPiece(piece);
     setIsDragging(true);
   };
 
@@ -103,26 +103,26 @@ const Board: Component<BoardProps> = (props) => {
       <div class={styles.boardContent}>
         <div 
           class={styles.grid}
-          style={{ '--grid-cell-size': `${5}px` }}
+          style={{ '--grid-cell-size': '5px' }}
         >
           {Array.from({ length: 14 * 14 }).map((_, index) => {
           const [x, y] = [index % 14, Math.floor(index / 14)];
           // Find if there's a base point at these coordinates and get its color
-          const basePoint = pieces().find(bp => bp.x === x && bp.y === y);
-          const isBP = !!basePoint;
+          const piece = pieces().find(p => p.x === x && p.y === y);
+          const isPiece = !!piece;
           const isNonPlayable = isInNonPlayableCorner(x, y);
           
           // Only show restricted squares when dragging and they originate from the dragged base point
-          const draggedBasePoint = pickedUpPiece();
+          const draggedPiece = pickedUpPiece();
           
           // Update the cell state to include the new hover state and base point properties
           const cellState = {
-            isBasePoint: isBP,
+            isPiece: isPiece,
             isHovered: !!((hoveredCell() && hoveredCell()![0] === x && hoveredCell()![1] === y)),
             isNonPlayable,
-            id: basePoint?.id,
-            color: getColorHex(basePoint?.color),
-            pieceType: basePoint?.pieceType
+            id: piece?.id,
+            color: getColorHex(piece?.color),
+            pieceType: piece?.pieceType
           };
 
           return (
@@ -131,7 +131,7 @@ const Board: Component<BoardProps> = (props) => {
               y={y}
               state={cellState}
               isDragging={isDragging()}
-              pickedUpBasePoint={draggedBasePoint ? createPoint(draggedBasePoint.x,draggedBasePoint.y) : null}
+              pickedUpPiece={draggedPiece ? createPoint(draggedPiece.x,draggedPiece.y) : null}
               onHover={(hovered) => {
                 if (hovered) {
                   setHoveredCell(createPoint(x, y));
@@ -139,7 +139,7 @@ const Board: Component<BoardProps> = (props) => {
                   setHoveredCell(null);
                 }
               }}
-              onBasePointPickup={handleBasePointPickup}
+              onPiecePickup={handlePiecePickup}
             />
           );
         })}
