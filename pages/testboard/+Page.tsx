@@ -9,6 +9,7 @@ export default function Page() {
   const [count, setCount] = createSignal(data?.initialCount ?? 0);
   let solidStatusRef: HTMLSpanElement | undefined;
   const counterName = "testpage_counter";
+  let undoFunction: (() => void) | undefined;
 
   async function fetchCounter() {
     try {
@@ -47,21 +48,22 @@ export default function Page() {
     fetchCounter();
   });
 
+  function handleUndo() {
+    if (undoFunction) {
+      undoFunction();
+    }
+  }
+
   return (
     <div class={styles.page}>
-      <div>
-        <h1>Test Page</h1>
-        <p data-testid="description">This is a test page for E2E testing.</p>
-
-        <p>SolidJS: <span data-testid="solid-status" ref={solidStatusRef}>inactive</span></p>
-        <div id="counter-section">
-          <p>Count: <span id="counter-value" data-testid="counter">{count()}</span></p>
-          <button id="increment-btn" data-testid="increment" onClick={increment}>Increment</button>
-          <button id="decrement-btn" data-testid="decrement" onClick={decrement}>Decrement</button>
-        </div>
+      <div class={styles.controlsContainer}>
+        <h2>Board Controls</h2>
+        <button class={styles.undoButton} onClick={handleUndo}>
+          Undo Move
+        </button>
       </div>
       <div class={styles.boardContainer}>
-        <Board/>
+        <Board onUndo={(undoFn) => { undoFunction = undoFn; }} />
       </div>
     </div>
   );

@@ -1,12 +1,38 @@
-.boardContainer {
-  flex-shrink: 0;
-  display: flex;
-}
-
 .page {
   display: flex;
   flex-direction: row;
-  background: lightgray;
-  flex-shrink: 0;
-  width: 50rem;
+  height: 100vh;
+  overflow: hidden;
 }
+
+.controlsContainer {
+  display: flex;
+  flex-direction: column;
+  width: 8rem;
+  gap: 1rem;
+}
+
+.undoButton {
+  padding: 0.5rem 1rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.undoButton:hover {
+  background-color: #1976D2;
+}
+
+.undoButton:active {
+  background-color: #1565C0;
+}
+
+.boardContainer {
+  display: flex;
+}
+
+

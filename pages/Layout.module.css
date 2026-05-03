@@ -18,10 +18,8 @@
 }
 
 .sidebar {
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  line-height: 1.8em;
 }
 
 .logo {
@@ -29,5 +27,6 @@
 }
 
 .pageContent {
+  display: flex;
   min-height: 100vh;
 }

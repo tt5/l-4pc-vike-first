@@ -18,6 +18,7 @@ interface BoardProps {
   gameId?: string;
   onGameIdChange?: (gameId: string) => void;
   onGameUpdate?: () => void;
+  onUndo?: () => void;
 }
 
 
@@ -46,6 +47,14 @@ const Board: Component<BoardProps> = (props) => {
     // update state
   }, { defer: false }));
 
+  // Expose undo function to parent component
+  onMount(() => {
+    if (props.onUndo) {
+      props.onUndo(undoLastMove);
+    }
+  });
+
+  
   // Handle drops outside the board (scenario 4)
   onMount(() => {
     const handleGlobalMouseUp = () => {
@@ -254,6 +263,89 @@ const Board: Component<BoardProps> = (props) => {
       ...prev,
       [piece.color]: null
     }));
+  };
+
+  const undoLastMove = () => {
+    const currentMoves = moves();
+    if (currentMoves.length === 0) return; // Can't undo at game start
+
+    const lastMove = currentMoves[currentMoves.length - 1];
+    
+    batch(() => {
+      // Restore pieces to previous state
+      setPieces(prev => {
+        let newPieces = [...prev];
+        
+        // Find the piece that moved and restore its position
+        const movedPiece = newPieces.find(p => 
+          p.x === lastMove.toX && p.y === lastMove.toY
+        );
+        
+        if (movedPiece) {
+          // Restore piece to original position
+          const pieceIndex = newPieces.findIndex(p => p.id === movedPiece.id);
+          newPieces[pieceIndex] = {
+            ...movedPiece,
+            x: lastMove.fromX,
+            y: lastMove.fromY,
+            hasMoved: false, // Reset hasMoved for proper castling/en passant logic
+            pieceType: lastMove.type === 'qpromotion' ? 'pawn' : movedPiece.pieceType
+          };
+        }
+        
+        // Handle castling - move rook back
+        if (lastMove.type === 'kcastle' || lastMove.type === 'qcastle') {
+          const castleType = lastMove.type === 'kcastle' ? 'KING_SIDE' : 'QUEEN_SIDE';
+          const rookMove = getRookMoveForCastle(movedPiece!.color, castleType);
+          const rook = newPieces.find(p => 
+            p.x === rookMove.toX && p.y === rookMove.toY && p.pieceType === 'rook'
+          );
+          
+          if (rook) {
+            const rookIndex = newPieces.findIndex(p => p.id === rook.id);
+            newPieces[rookIndex] = {
+              ...rook,
+              x: rookMove.fromX,
+              y: rookMove.fromY,
+              hasMoved: false
+            };
+          }
+        }
+        
+        // Restore captured piece
+        if (lastMove.captured) {
+          newPieces.push(lastMove.captured);
+        }
+        
+        // Handle en passant - restore the captured pawn that's not at the target square
+        if (lastMove.type === 'enpassant') {
+          // For en passant, the captured piece is the pawn that was bypassed
+          // It should be restored to its original position
+          const capturedPawn = lastMove.captured;
+          if (capturedPawn) {
+            newPieces.push(capturedPawn);
+          }
+        }
+        
+        return newPieces;
+      });
+      
+      // Remove the last move from history
+      setMoves(prev => prev.slice(0, -1));
+      
+      // Decrement current move index
+      setCurrentMoveIndex(prev => Math.max(0, prev - 1));
+      
+      // Restore en passant targets to previous state
+      // This is simplified - in a full implementation, we'd need to track en passant history
+      // For now, we'll clear all en passant targets after undo
+      setEnPassantTargets({
+        'RED': null,
+        'YELLOW': null,
+        'BLUE': null,
+        'GREEN': null
+      });
+    });
   };
 
 
