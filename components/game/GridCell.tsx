@@ -22,6 +22,7 @@ interface GridCellProps {
   onHover: (isHovered: boolean) => void;
   onClick?: () => void;
   onPiecePickup: (point: Point) => void;
+  onPieceDrop?: (point: Point) => void;
 }
 
 export const GridCell: Component<GridCellProps> = (props) => {
@@ -43,7 +44,11 @@ export const GridCell: Component<GridCellProps> = (props) => {
     props.onHover(true);
   };
 
-  const handleMouseUp = () => {};
+  const handleMouseUp = () => {
+    if (isDraggingProp && pickedUpPiece) {
+      props.onPieceDrop?.(createPoint(x, y));
+    }
+  };
 
   const squareClass = () => {
     const classes = [styles.square];
