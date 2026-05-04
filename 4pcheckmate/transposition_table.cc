@@ -69,9 +69,10 @@ void TranspositionTable::Save(
     entry.key = key;
     entry.set_depth(static_cast<uint8_t>(depth));
     if (move.has_value()) {
-      entry.packed_move = move->Pack();
+      entry.move = move.value();
+      entry.set_has_move(true);
     } else {
-      entry.packed_move = 0;  // 0 means no move
+      entry.set_has_move(false);
     }
     entry.SetScore(score);
     entry.eval = static_cast<int8_t>(eval);
@@ -97,7 +98,8 @@ void TranspositionTable::Merge(const TranspositionTable& source) {
       if (entry.key == 0) {
         entry.key = src_entry.key;
         entry.gen_depth = src_entry.gen_depth;  // Copy packed depth+generation
-        entry.packed_move = src_entry.packed_move;
+        entry.bound_is_pv = src_entry.bound_is_pv;  // Copy bound/is_pv/has_move flags
+        entry.move = src_entry.move;
         entry.score = src_entry.score;
         entry.eval = src_entry.eval;
         entry.set_generation(generation_);

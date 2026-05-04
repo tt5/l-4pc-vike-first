@@ -16,15 +16,15 @@ enum ScoreBound {
   EXACT = 0, LOWER_BOUND = 1, UPPER_BOUND = 2,
 };
 
-#pragma pack(push, 1)
 struct HashTableEntry {
   int64_t key;            // 8 bytes - full Zobrist hash
-  uint32_t packed_move;   // 4 bytes - move (bits 0-20) + bound/is_pv (bits 21-23)
+  Move move;              // Full move object (no packing)
   int16_t score;          // 2 bytes - packed score (mate scores encoded)
   int8_t eval;            // 1 byte - static evaluation (clamped to ±127 centipawns)
   uint8_t gen_depth;      // 1 byte - generation (bits 6-7) + depth (bits 0-5, max 63)
+  uint8_t bound_is_pv;    // 1 byte - bound (bits 0-1) + is_pv (bit 2) + has_move (bit 3)
 
-  // Accessors for packed fields (for compatibility with existing search code)
+  // Accessors for packed fields
   int GetScore() const;
   void SetScore(int s);
 
@@ -35,22 +35,28 @@ struct HashTableEntry {
   void set_generation(uint8_t g) { gen_depth = (gen_depth & 0x3F) | ((g & 0x3) << 6); }
 
   ScoreBound bound() const {
-    return static_cast<ScoreBound>((packed_move >> 21) & 0x3);
+    return static_cast<ScoreBound>(bound_is_pv & 0x3);
   }
   void set_bound(ScoreBound b) {
-    packed_move = (packed_move & ~(0x3 << 21)) | (static_cast<uint32_t>(b) << 21);
+    bound_is_pv = (bound_is_pv & ~0x3) | (static_cast<uint8_t>(b) & 0x3);
   }
 
   bool is_pv() const {
-    return (packed_move >> 23) & 0x1;
+    return (bound_is_pv >> 2) & 0x1;
   }
   void set_is_pv(bool pv) {
-    packed_move = (packed_move & ~(1 << 23)) | (static_cast<uint32_t>(pv) << 23);
+    bound_is_pv = (bound_is_pv & ~(1 << 2)) | (static_cast<uint8_t>(pv) << 2);
+  }
+
+  bool has_move() const {
+    return (bound_is_pv >> 3) & 0x1;
+  }
+  void set_has_move(bool has) {
+    bound_is_pv = (bound_is_pv & ~(1 << 3)) | (static_cast<uint8_t>(has) << 3);
   }
 };
-#pragma pack(pop)
 
-static_assert(sizeof(HashTableEntry) == 16, "TT entry must be exactly 16 bytes");
+static_assert(sizeof(HashTableEntry) > 16, "TT entry must be larger than 16 bytes");
 
 class TranspositionTable {
  public:

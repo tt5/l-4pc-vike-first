@@ -166,17 +166,17 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
               || (tte->bound() == UPPER_BOUND && tte->GetScore() <= alpha))
             ) {
 
-          if (tte->packed_move != 0) {
+          if (tte->has_move()) {
               return std::make_tuple(
                   std::min(beta, std::max(alpha, tte->GetScore())),
-                  Move::Unpack(tte->packed_move, board));
+                  tte->move);
           }
           return std::make_tuple(
             std::min(beta, std::max(alpha, tte->GetScore())), std::nullopt);
         }
       }
-      if (tte->packed_move != 0) {
-        tt_move = Move::Unpack(tte->packed_move, board);
+      if (tte->has_move()) {
+        tt_move = tte->move;
       }
     }
   }
