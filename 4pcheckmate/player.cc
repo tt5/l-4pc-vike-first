@@ -131,10 +131,10 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
 
   num_nodes_++;
-  if (num_nodes_ % 200000 == 0) {
-    std::cout << "nodes: " << num_nodes_ 
-              << " checkmates: " << g_unique_checkmates_found.load() << std::endl;
-  }
+  //if (num_nodes_ % 200000 == 0) {
+  //  std::cout << "nodes: " << num_nodes_ 
+  //            << " checkmates: " << g_unique_checkmates_found.load() << std::endl;
+  //}
   if (canceled_) {
     return std::nullopt;
   }
@@ -595,7 +595,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
         bloom_filter_->Add(hash_key); // idempotent for already existing positions
         checkmate_table_->Insert(hash_key); // checks if the key already exists anyway
         g_unique_checkmates_found++;
-        if (g_unique_checkmates_found % 400000 == 0) {
+        if (g_unique_checkmates_found % 10000 == 0) {
           std::cout << "Found " << g_unique_checkmates_found << " unique checkmates." << std::endl;
         }
       }

@@ -28,11 +28,12 @@ class EngineProcess:
             [executable],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
         )
         self.buffer = ""
+        self.stderr_buffer = ""
 
     def send(self, command: str) -> None:
         """Send a command to the engine."""
@@ -50,7 +51,12 @@ class EngineProcess:
         if self.process.poll() is not None:
             return None
 
-        # Read available data
+        # First, check if we already have a complete line in the buffer
+        if '\n' in self.buffer:
+            line, self.buffer = self.buffer.split('\n', 1)
+            return line.strip()
+
+        # Try to read more data if no complete line in buffer
         import select
         import os
 
@@ -65,9 +71,45 @@ class EngineProcess:
         except (OSError, ValueError):
             pass
 
-        # Check for complete lines in buffer
+        # Check again for complete lines after reading
         if '\n' in self.buffer:
             line, self.buffer = self.buffer.split('\n', 1)
+            return line.strip()
+
+        return None
+
+    def read_stderr_line(self) -> Optional[str]:
+        """Read a complete line from stderr, or None if not available."""
+        if self.process.stderr is None:
+            return None
+
+        # Check if process has exited
+        if self.process.poll() is not None:
+            return None
+
+        # First, check if we already have a complete line in the buffer
+        if '\n' in self.stderr_buffer:
+            line, self.stderr_buffer = self.stderr_buffer.split('\n', 1)
+            return line.strip()
+
+        # Try to read more data if no complete line in buffer
+        import select
+        import os
+
+        fd = self.process.stderr.fileno()
+        try:
+            # Check if there's data available (non-blocking)
+            ready, _, _ = select.select([fd], [], [], 0)
+            if ready:
+                chunk = os.read(fd, 1024).decode('utf-8', errors='replace')
+                if chunk:
+                    self.stderr_buffer += chunk
+        except (OSError, ValueError):
+            pass
+
+        # Check again for complete lines after reading
+        if '\n' in self.stderr_buffer:
+            line, self.stderr_buffer = self.stderr_buffer.split('\n', 1)
             return line.strip()
 
         return None
@@ -136,36 +178,30 @@ class PVBridge:
     def update_checkmate_position(self, new_pv: List[str], depth: int = 0) -> None:
         """
         Update 4pcheckmate's position to match the new PV.
-        Only undo and replay the changed moves.
+        Sends stop, position with full move list, and go.
         """
         if new_pv == self.current_pv:
             return
 
         print(f"[PV] Depth {depth}: {' '.join(new_pv)}")
 
-        # Find common prefix length
         common_len = self.find_common_prefix_length(self.current_pv, new_pv)
-        num_undo = len(self.current_pv) - common_len
         num_new = len(new_pv) - common_len
 
-        if num_undo > 0:
-            print(f"[Checkmate] Undoing {num_undo} move(s)")
         if num_new > 0:
-            print(f"[Checkmate] Applying {num_new} new move(s): {' '.join(new_pv[common_len:])}")
+            print(f"[Checkmate] New moves: {' '.join(new_pv[common_len:])}")
 
         self.checkmate_engine.send("stop")
+        sleep(0.1)
 
-        # Undo moves that are no longer in the new PV (in reverse order)
-        num_to_undo = len(self.current_pv) - common_len
-        for i in range(num_to_undo):
-            self.checkmate_engine.send("undo")
-            sleep(0.2)
-
-        # Apply new moves from the common prefix onwards
-        new_moves = new_pv[common_len:]
-        for move in new_moves:
-            self.checkmate_engine.send(f"move {move}")
-            sleep(0.2)
+        # Build position command with full move list
+        moves_str = ' '.join(new_pv)
+        if self.position == "startpos":
+            self.checkmate_engine.send(f"position startpos moves {moves_str}")
+        elif self.position.startswith("fen "):
+            self.checkmate_engine.send(f"position {self.position} moves {moves_str}")
+        else:
+            self.checkmate_engine.send(f"position fen {self.position} moves {moves_str}")
 
         self.checkmate_engine.send("go")
 
@@ -183,20 +219,12 @@ class PVBridge:
 
     def should_log_engine_output(self, line: str) -> bool:
         """Check if an engine output line should be logged."""
-        # Log checkmate-related messages from both engines
-        if "checkmate" in line.lower():
-            return True
-        if "checkmate_skips" in line:
-            return True
-        if "checkmates:" in line:
-            return True
-        if line.startswith("nodes: "):
-            return True
-        return False
+        # Log all engine output
+        return True
 
-    def log_engine_output(self, engine_name: str, line: str) -> None:
+    def log_engine_output(self, engine_name: str, line: str, force: bool = False) -> None:
         """Log output from an engine."""
-        if self.should_log_engine_output(line):
+        if force or self.should_log_engine_output(line):
             print(f"[{engine_name}] {line}")
 
     def run(self) -> None:
@@ -207,7 +235,7 @@ class PVBridge:
         self.chess_engine.send(f"go depth {self.depth}")
 
         while self.running:
-            # Read from 4pchess engine (main search)
+            # Read from 4pchess engine stdout (main search)
             line = self.chess_engine.read_line()
             if line is not None:
                 self.log_engine_output("4pchess", line)
@@ -225,10 +253,20 @@ class PVBridge:
                     depth = int(depth_match.group(1)) if depth_match else 0
                     self.update_checkmate_position(new_pv, depth)
 
-            # Read from 4pcheckmate engine (checkmate discovery)
+            # Read from 4pchess engine stderr
+            chess_stderr = self.chess_engine.read_stderr_line()
+            if chess_stderr is not None:
+                print(f"[4pchess STDERR] {chess_stderr}")
+
+            # Read from 4pcheckmate engine stdout (checkmate discovery)
             checkmate_line = self.checkmate_engine.read_line()
             if checkmate_line is not None:
                 self.log_engine_output("4pcheckmate", checkmate_line)
+
+            # Read from 4pcheckmate engine stderr
+            checkmate_stderr = self.checkmate_engine.read_stderr_line()
+            if checkmate_stderr is not None:
+                print(f"[4pcheckmate STDERR] {checkmate_stderr}")
 
     def stop(self) -> None:
         """Stop both engines."""
