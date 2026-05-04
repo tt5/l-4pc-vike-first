@@ -128,12 +128,22 @@ class PVBridge:
         if pv == self.current_pv:
             return
         
+        if depth < 10:
+            return
+        
         print(f"[Bridge] PV @ depth {depth}: {' '.join(pv)}")
         
         # Send stop, new position, go
         self.checkmate.send("stop")
+
+        common = 0
+        for a, b in zip(self.current_pv, pv):
+            if a == b:
+                common += 1
+            else:
+                break
         
-        moves = ' '.join(pv)
+        moves = ' '.join(pv[:common])
         if self.position == "startpos":
             self.checkmate.send(f"position startpos moves {moves}")
         elif self.position.startswith("fen "):
