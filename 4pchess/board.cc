@@ -1183,232 +1183,239 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
   
             } break;
             case KING: {
-               //current = GetKingMovesNoCheck(current, location, current_color, my_team);
-  const Team enemy_team = OtherTeam(my_team);
-  
-  const CastlingRights& castling_rights = castling_rights_[current_color];
+                const Team enemy_team = OtherTeam(my_team);
+              
+                const CastlingRights& castling_rights = castling_rights_[current_color];
 
-    // up-left
-    if (IsLegalLocation(from_row - 1, from_col - 1)) {
-      //if (!IsAttackedByTeam(enemy_team, {row - 1, col - 1})) {
-        const Piece captured = location_to_piece_[from_row - 1][from_col - 1];
-        if (captured.Missing() || captured.GetTeam() != my_team) {
-            //*current++ = Move(from, {row - 1, col - 1}, captured, castling_rights);
-            new (current++) Move(from_row, from_col, from_row -1, from_col - 1, captured.GetRaw(), castling_rights);
-        }
-      //}
-    }
+                // up-left
+                if (IsLegalLocation(from_row - 1, from_col - 1)) {
+                  //if (!IsAttackedByTeam(enemy_team, {row - 1, col - 1})) {
+                    const Piece captured = location_to_piece_[from_row - 1][from_col - 1];
+                    if (captured.Missing() || captured.GetTeam() != my_team) {
+                        //*current++ = Move(from, {row - 1, col - 1}, captured, castling_rights);
+                        new (current++) Move(from_row, from_col, from_row -1, from_col - 1, captured.GetRaw(), castling_rights);
+                    }
+                  //}
+                }
 
-    // up-right
-    if (IsLegalLocation(from_row - 1, from_col + 1)) {
-        const Piece captured = location_to_piece_[from_row - 1][from_col + 1];
-        if (captured.Missing() || captured.GetTeam() != my_team) {
-            //*current++ = Move(from, {row - 1, col + 1}, captured, castling_rights);
-            new (current++) Move(from_row, from_col, from_row -1, from_col + 1, captured.GetRaw(), castling_rights);
-        }
-    }
+                // up-right
+                if (IsLegalLocation(from_row - 1, from_col + 1)) {
+                    const Piece captured = location_to_piece_[from_row - 1][from_col + 1];
+                    if (captured.Missing() || captured.GetTeam() != my_team) {
+                        //*current++ = Move(from, {row - 1, col + 1}, captured, castling_rights);
+                        new (current++) Move(from_row, from_col, from_row -1, from_col + 1, captured.GetRaw(), castling_rights);
+                    }
+                }
 
-    // down-left
-    if (IsLegalLocation(from_row + 1, from_col - 1)) {
-        const Piece captured = location_to_piece_[from_row + 1][from_col - 1];
-        if (captured.Missing() || captured.GetTeam() != my_team) {
-            //*current++ = Move(from, {row + 1, col - 1}, captured, castling_rights);
-            new (current++) Move(from_row, from_col, from_row + 1, from_col - 1, captured.GetRaw(), castling_rights);
-        }
-    }
+                // down-left
+                if (IsLegalLocation(from_row + 1, from_col - 1)) {
+                    const Piece captured = location_to_piece_[from_row + 1][from_col - 1];
+                    if (captured.Missing() || captured.GetTeam() != my_team) {
+                        //*current++ = Move(from, {row + 1, col - 1}, captured, castling_rights);
+                        new (current++) Move(from_row, from_col, from_row + 1, from_col - 1, captured.GetRaw(), castling_rights);
+                    }
+                }
 
-    // down-right
-    if (IsLegalLocation(from_row + 1, from_col + 1)) {
-        const Piece captured = location_to_piece_[from_row + 1][from_col + 1];
-        if (captured.Missing() || captured.GetTeam() != my_team) {
-            //*current++ = Move(from, {row + 1, col + 1}, captured, castling_rights);
-            new (current++) Move(from_row, from_col, from_row + 1, from_col + 1, captured.GetRaw(), castling_rights);
-        }
-    }
+                // down-right
+                if (IsLegalLocation(from_row + 1, from_col + 1)) {
+                    const Piece captured = location_to_piece_[from_row + 1][from_col + 1];
+                    if (captured.Missing() || captured.GetTeam() != my_team) {
+                        //*current++ = Move(from, {row + 1, col + 1}, captured, castling_rights);
+                        new (current++) Move(from_row, from_col, from_row + 1, from_col + 1, captured.GetRaw(), castling_rights);
+                    }
+                }
 
-    // up
-    if (IsLegalLocation(from_row - 1, from_col)) {
-      const Piece captured = location_to_piece_[from_row - 1][from_col];
-      if (captured.Missing()) {
-        //*current++ = Move(from, {row - 1, col});
-        new (current++) Move(from_row, from_col, from_row - 1, from_col, 0);
+                // up
+                if (IsLegalLocation(from_row - 1, from_col)) {
+                  const Piece captured = location_to_piece_[from_row - 1][from_col];
+                  if (captured.Missing()) {
+                    //*current++ = Move(from, {row - 1, col});
+                    new (current++) Move(from_row, from_col, from_row - 1, from_col, 0);
 
-        // Blue queenside castling
-        if (current_color == BLUE &&
-            castling_rights.Queenside() && 
-            !location_to_piece_[4][0].Present() && // knight
-            !location_to_piece_[5][0].Present() && // bishop
-            //!location_to_piece_[6][0].Present() && // queen, empty!
-            (location_to_piece_[3][0].GetRaw() == Piece::kRawBlueRook) &&
-            !IsAttackedByTeam(enemy_team, 6, 0) // queen
-            ) {
-            new (current++) Move(
-                7, 0,  // king_from
-                5, 0,  // king_to
-                3, 0, 6, 0,  // rook_from, rook_to
-                castling_rights
-            );
-        }
+                    /*
+                    // Blue queenside castling
+                    if (current_color == BLUE &&
+                        castling_rights.Queenside() && 
+                        !location_to_piece_[4][0].Present() && // knight
+                        !location_to_piece_[5][0].Present() && // bishop
+                        //!location_to_piece_[6][0].Present() && // queen, empty!
+                        (location_to_piece_[3][0].GetRaw() == Piece::kRawBlueRook) &&
+                        !IsAttackedByTeam(enemy_team, 6, 0) // queen
+                        ) {
+                        new (current++) Move(
+                            7, 0,  // king_from
+                            5, 0,  // king_to
+                            3, 0, 6, 0,  // rook_from, rook_to
+                            castling_rights
+                        );
+                    }
 
-        // Green kingside castling
-        if (current_color == GREEN &&
-            castling_rights.Kingside() &&
-            !location_to_piece_[4][13].Present() && // knight
-            //!location_to_piece_[4][13].Present() && // bishop, empty!
-            (location_to_piece_[3][13].GetRaw() == Piece::kRawGreenRook) &&
-            !IsAttackedByTeam(enemy_team, 5, 13)) {  // bishop
-            
-            new (current++) Move(
-                6, 13,  // king_from
-                4, 13,  // king_to
-                3, 13, 5, 13,  // rook_from, rook_to
-                castling_rights
-            );
-        }
-      } else if (captured.GetTeam() != my_team) {
-        //*current++ = Move(from, {row - 1, col}, captured, castling_rights);
-        new (current++) Move(from_row, from_col, from_row - 1, from_col, captured.GetRaw(), castling_rights);
-      }
-    }
+                    // Green kingside castling
+                    if (current_color == GREEN &&
+                        castling_rights.Kingside() &&
+                        !location_to_piece_[4][13].Present() && // knight
+                        //!location_to_piece_[4][13].Present() && // bishop, empty!
+                        (location_to_piece_[3][13].GetRaw() == Piece::kRawGreenRook) &&
+                        !IsAttackedByTeam(enemy_team, 5, 13)) {  // bishop
+                        
+                        new (current++) Move(
+                            6, 13,  // king_from
+                            4, 13,  // king_to
+                            3, 13, 5, 13,  // rook_from, rook_to
+                            castling_rights
+                        );
+                    }
+                    */
+                  } else if (captured.GetTeam() != my_team) {
+                    //*current++ = Move(from, {row - 1, col}, captured, castling_rights);
+                    new (current++) Move(from_row, from_col, from_row - 1, from_col, captured.GetRaw(), castling_rights);
+                  }
+                }
 
-    // left
-    if (IsLegalLocation(from_row, from_col - 1)) {
-      const Piece captured = location_to_piece_[from_row][from_col - 1];
-      if (captured.Missing()) {
-        //*current++ = Move(from, {row, col - 1});
-        new (current++) Move(from_row, from_col, from_row, from_col - 1, 0);
+                // left
+                if (IsLegalLocation(from_row, from_col - 1)) {
+                  const Piece captured = location_to_piece_[from_row][from_col - 1];
+                  if (captured.Missing()) {
+                    //*current++ = Move(from, {row, col - 1});
+                    new (current++) Move(from_row, from_col, from_row, from_col - 1, 0);
 
-        // Red queenside castling - optimized
-        if (current_color == RED &&
-            castling_rights.Queenside() &&
-            !location_to_piece_[13][4].Present() && // knight
-            !location_to_piece_[13][5].Present() && // bishop
-            // queen square is empty
-            (location_to_piece_[13][3].GetRaw() == Piece::kRawRedRook) &&
-            !IsAttackedByTeam(enemy_team, 13, 6))  // queen
-          {
-            
-            new (current++) Move(
-              13, 7,  // king_from
-              13, 5,  // king_to
-              13, 3, 13, 6,  // rook_from, rook_to
-              castling_rights
-            );
-        }
-        // YELLOW kingside castling - optimized
-        if (current_color == YELLOW &&
-            castling_rights.Kingside() &&
-            !location_to_piece_[0][4].Present() && // knight
-            // bishop is empty
-            (location_to_piece_[0][3].GetRaw() == Piece::kRawYellowRook) &&
-            !IsAttackedByTeam(enemy_team, 0, 5)) {  // bishop
-      
-            new (current++) Move(
-                0, 6,  // king_from
-                0, 4,  // king_to
-                0, 3, 0, 5,  // rook_from, rook_to
-                castling_rights
-            );
-        }   
-      } else if (captured.GetTeam() != my_team) {
-        //*current++ = Move(from, {row, col - 1}, captured, castling_rights);
-        new (current++) Move(from_row, from_col, from_row, from_col - 1, captured.GetRaw(), castling_rights);
-      }
-    }
+                    /*
+                    // Red queenside castling - optimized
+                    if (current_color == RED &&
+                        castling_rights.Queenside() &&
+                        !location_to_piece_[13][4].Present() && // knight
+                        !location_to_piece_[13][5].Present() && // bishop
+                        // queen square is empty
+                        (location_to_piece_[13][3].GetRaw() == Piece::kRawRedRook) &&
+                        !IsAttackedByTeam(enemy_team, 13, 6))  // queen
+                      {
+                        
+                        new (current++) Move(
+                          13, 7,  // king_from
+                          13, 5,  // king_to
+                          13, 3, 13, 6,  // rook_from, rook_to
+                          castling_rights
+                        );
+                    }
+                    // YELLOW kingside castling - optimized
+                    if (current_color == YELLOW &&
+                        castling_rights.Kingside() &&
+                        !location_to_piece_[0][4].Present() && // knight
+                        // bishop is empty
+                        (location_to_piece_[0][3].GetRaw() == Piece::kRawYellowRook) &&
+                        !IsAttackedByTeam(enemy_team, 0, 5)) {  // bishop
+                  
+                        new (current++) Move(
+                            0, 6,  // king_from
+                            0, 4,  // king_to
+                            0, 3, 0, 5,  // rook_from, rook_to
+                            castling_rights
+                        );
+                    }   
+                    */
+                  } else if (captured.GetTeam() != my_team) {
+                    //*current++ = Move(from, {row, col - 1}, captured, castling_rights);
+                    new (current++) Move(from_row, from_col, from_row, from_col - 1, captured.GetRaw(), castling_rights);
+                  }
+                }
 
-    // right
-    if (IsLegalLocation(from_row, from_col + 1)) {
-      const Piece captured = location_to_piece_[from_row][from_col + 1];
-      if (captured.Missing()) {
-        //*current++ = Move(from, {row, col + 1});
-        new (current++) Move(from_row, from_col, from_row, from_col + 1, 0);
+                // right
+                if (IsLegalLocation(from_row, from_col + 1)) {
+                  const Piece captured = location_to_piece_[from_row][from_col + 1];
+                  if (captured.Missing()) {
+                    //*current++ = Move(from, {row, col + 1});
+                    new (current++) Move(from_row, from_col, from_row, from_col + 1, 0);
 
-        // RED kingside castling - optimized
-        if (current_color == RED &&
-            castling_rights.Kingside() &&
-            !location_to_piece_[13][9].Present() &&  // knight
-            // bishop empty
-            (location_to_piece_[13][10].GetRaw() == Piece::kRawRedRook) &&
-            !IsAttackedByTeam(enemy_team, 13, 8)) {  // bishop
-            
-            new (current++) Move(
-                13, 7,  // king_from
-                13, 9,  // king_to
-                13, 10, 13, 8,  // rook_from, rook_to
-                castling_rights
-            );
-        }
-        // YELLOW queenside castling - optimized
-        if (current_color == YELLOW &&
-            castling_rights.Queenside() &&
-            !location_to_piece_[0][9].Present() &&  // knight
-            !location_to_piece_[0][8].Present() &&  // bishop
-            // queen empty
-            (location_to_piece_[0][10].GetRaw() == Piece::kRawYellowRook) &&
-            !IsAttackedByTeam(enemy_team, 0, 7))  // queen
-            {
-            
-            new (current++) Move(
-                0, 6,  // king_from
-                0, 8,  // king_to
-                0, 10, 0, 7,  // rook_from, rook_to
-                castling_rights
-            );
-        }
-      } else if (captured.GetTeam() != my_team) {
-        //*current++ = Move(from, {row, col + 1}, captured, castling_rights);
-        new (current++) Move(from_row, from_col, from_row, from_col + 1, captured.GetRaw(), castling_rights);
-      }
-    }
-  // down
-    if (IsLegalLocation(from_row + 1, from_col)) {
+                    /*
+                    // RED kingside castling - optimized
+                    if (current_color == RED &&
+                        castling_rights.Kingside() &&
+                        !location_to_piece_[13][9].Present() &&  // knight
+                        // bishop empty
+                        (location_to_piece_[13][10].GetRaw() == Piece::kRawRedRook) &&
+                        !IsAttackedByTeam(enemy_team, 13, 8)) {  // bishop
+                        
+                        new (current++) Move(
+                            13, 7,  // king_from
+                            13, 9,  // king_to
+                            13, 10, 13, 8,  // rook_from, rook_to
+                            castling_rights
+                        );
+                    }
+                    // YELLOW queenside castling - optimized
+                    if (current_color == YELLOW &&
+                        castling_rights.Queenside() &&
+                        !location_to_piece_[0][9].Present() &&  // knight
+                        !location_to_piece_[0][8].Present() &&  // bishop
+                        // queen empty
+                        (location_to_piece_[0][10].GetRaw() == Piece::kRawYellowRook) &&
+                        !IsAttackedByTeam(enemy_team, 0, 7))  // queen
+                        {
+                        
+                        new (current++) Move(
+                            0, 6,  // king_from
+                            0, 8,  // king_to
+                            0, 10, 0, 7,  // rook_from, rook_to
+                            castling_rights
+                        );
+                    }
+                    */
+                  } else if (captured.GetTeam() != my_team) {
+                    //*current++ = Move(from, {row, col + 1}, captured, castling_rights);
+                    new (current++) Move(from_row, from_col, from_row, from_col + 1, captured.GetRaw(), castling_rights);
+                  }
+                }
+              // down
+                if (IsLegalLocation(from_row + 1, from_col)) {
 
-      const Piece captured = location_to_piece_[from_row + 1][from_col];
-      if (captured.Missing()) {
-        //*current++ = Move(from, {row + 1, col});
-        new (current++) Move(from_row, from_col, from_row + 1, from_col, 0);
+                  const Piece captured = location_to_piece_[from_row + 1][from_col];
+                  if (captured.Missing()) {
+                    //*current++ = Move(from, {row + 1, col});
+                    new (current++) Move(from_row, from_col, from_row + 1, from_col, 0);
 
-        // BLUE kingside castling
-          if (current_color == BLUE &&
-              castling_rights.Kingside() &&
-              !location_to_piece_[9][0].Present() &&  // knight
-              (location_to_piece_[10][0].GetRaw() == Piece::kRawBlueRook) &&
-              !IsAttackedByTeam(enemy_team, 8, 0)) {  // bishop
-        
-          new (current++) Move(
-              7, 0,  // king_from
-              9, 0,  // king_to
-              10, 0, 8, 0,  // rook_from, rook_to
-              castling_rights
-            );
-        }
-        // GREEN queenside castling
-        if (current_color == GREEN &&
-          castling_rights.Queenside() &&
-          // queen empty
-          !location_to_piece_[8][13].Present() && // bishop
-          !location_to_piece_[9][13].Present() && // knight
-          (location_to_piece_[10][13].GetRaw() == Piece::kRawGreenRook) &&
-          !IsAttackedByTeam(enemy_team, 7, 13))  // queen
-          {  // King's path
-    
-          new (current++) Move(
-              6, 13,  // king_from
-              8, 13,  // king_to
-              10, 13, 7, 13,  // rook_from, rook_to
-              castling_rights
-            );
-        }
-      } else if (captured.GetTeam() != my_team) {
-        //*current++ = Move(from, {row + 1, col}, captured, castling_rights);
-        new (current++) Move(from_row, from_col, from_row + 1, from_col, captured.GetRaw(), castling_rights);
-      }
-    }
-            } break;
-            default: assert(false && "Movegen: Invalid piece type");
-        }
+                    /*
+                    // BLUE kingside castling
+                      if (current_color == BLUE &&
+                          castling_rights.Kingside() &&
+                          !location_to_piece_[9][0].Present() &&  // knight
+                          (location_to_piece_[10][0].GetRaw() == Piece::kRawBlueRook) &&
+                          !IsAttackedByTeam(enemy_team, 8, 0)) {  // bishop
+                    
+                      new (current++) Move(
+                          7, 0,  // king_from
+                          9, 0,  // king_to
+                          10, 0, 8, 0,  // rook_from, rook_to
+                          castling_rights
+                        );
+                    }
+                    // GREEN queenside castling
+                    if (current_color == GREEN &&
+                      castling_rights.Queenside() &&
+                      // queen empty
+                      !location_to_piece_[8][13].Present() && // bishop
+                      !location_to_piece_[9][13].Present() && // knight
+                      (location_to_piece_[10][13].GetRaw() == Piece::kRawGreenRook) &&
+                      !IsAttackedByTeam(enemy_team, 7, 13))  // queen
+                      {  // King's path
+                
+                      new (current++) Move(
+                          6, 13,  // king_from
+                          8, 13,  // king_to
+                          10, 13, 7, 13,  // rook_from, rook_to
+                          castling_rights
+                        );
+                    }
+                    */
+                  } else if (captured.GetTeam() != my_team) {
+                    //*current++ = Move(from, {row + 1, col}, captured, castling_rights);
+                    new (current++) Move(from_row, from_col, from_row + 1, from_col, captured.GetRaw(), castling_rights);
+                  }
+                }
+              } break;
+              default: assert(false && "Movegen: Invalid piece type");
+          }
 
-      } else if ( // in_check [[unlikely]]
+        } else if ( // in_check [[unlikely]]
           att_type == QUEEN ||
           att_type == ROOK ||
           att_type == BISHOP
@@ -2848,13 +2855,23 @@ Move Move::Unpack(uint32_t packed, const Board& board) {
   bool is_en_passant = (packed >> 20) & 1;
 
   if (is_castling) {
-    // For castling, we need to determine the rook move based on king's movement
     CastlingRights rights = board.GetCastlingRights(board.GetTurn());
-    // Rook move is derived from king's from/to
-    if (to_c > from_c) {  // Kingside
-      return Move(from_r, from_c, to_r, to_c, from_r, 13, from_r, to_c - 1, rights);
-    } else {  // Queenside
-      return Move(from_r, from_c, to_r, to_c, from_r, 0, from_r, to_c + 1, rights);
+    PlayerColor color = board.GetTurn().GetColor();
+    
+    if (color == RED || color == YELLOW) {
+      // Vertical players: rooks at columns 3 and 10
+      if (to_c > from_c) {  // Kingside (toward column 10)
+        return Move(from_r, from_c, to_r, to_c, from_r, 10, from_r, to_c - 1, rights);
+      } else {  // Queenside (toward column 3)
+        return Move(from_r, from_c, to_r, to_c, from_r, 3, from_r, to_c + 1, rights);
+      }
+    } else {
+      // Horizontal players (BLUE, GREEN): rooks at rows 3 and 10
+      if (to_r > from_r) {  // Kingside (toward row 10)
+        return Move(from_r, from_c, to_r, to_c, 10, from_c, to_r - 1, from_c, rights);
+      } else {  // Queenside (toward row 3)
+        return Move(from_r, from_c, to_r, to_c, 3, from_c, to_r + 1, from_c, rights);
+      }
     }
   }
 

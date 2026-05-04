@@ -42,7 +42,8 @@ TranspositionTable::TranspositionTable(size_t table_size) {
   while (table_size_ < table_size) {
     table_size_ <<= 1;
   }
-  hash_table_ = (HashTableEntry*) malloc(table_size_ * sizeof(HashTableEntry));
+  //hash_table_ = (HashTableEntry*) malloc(table_size_ * sizeof(HashTableEntry));
+  hash_table_ = (HashTableEntry*) calloc(table_size_, sizeof(HashTableEntry));
   assert(
       (hash_table_ != nullptr) && 
       "Can't create transposition table. Try using a smaller size.");
