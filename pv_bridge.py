@@ -36,6 +36,7 @@ class EngineProcess:
 
     def send(self, command: str) -> None:
         """Send a command to the engine."""
+        print(f"[{self.process.args[0].name}] {command}")
         if self.process.stdin and not self.process.poll():
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
@@ -132,7 +133,7 @@ class PVBridge:
                 return i
         return min_len
 
-    def update_checkmate_position(self, new_pv: List[str]) -> None:
+    def update_checkmate_position(self, new_pv: List[str], depth: int = 0) -> None:
         """
         Update 4pcheckmate's position to match the new PV.
         Only undo and replay the changed moves.
@@ -140,12 +141,21 @@ class PVBridge:
         if new_pv == self.current_pv:
             return
 
+        print(f"[PV] Depth {depth}: {' '.join(new_pv)}")
+
         # Find common prefix length
         common_len = self.find_common_prefix_length(self.current_pv, new_pv)
+        num_undo = len(self.current_pv) - common_len
+        num_new = len(new_pv) - common_len
+
+        if num_undo > 0:
+            print(f"[Checkmate] Undoing {num_undo} move(s)")
+        if num_new > 0:
+            print(f"[Checkmate] Applying {num_new} new move(s): {' '.join(new_pv[common_len:])}")
 
         # Undo moves that are no longer in the new PV (in reverse order)
         num_to_undo = len(self.current_pv) - common_len
-        for _ in range(num_to_undo):
+        for i in range(num_to_undo):
             self.checkmate_engine.send("stop")
             sleep(0.2)
             self.checkmate_engine.send("undo")
@@ -162,6 +172,7 @@ class PVBridge:
             self.checkmate_engine.send("go")
 
         self.current_pv = new_pv.copy()
+        print(f"[Checkmate] Position updated: {len(self.current_pv)} move(s) in PV")
 
     def parse_info_line(self, line: str) -> Optional[List[str]]:
         """Parse an info line and extract the PV moves."""
@@ -192,7 +203,10 @@ class PVBridge:
             # Parse info line with PV
             new_pv = self.parse_info_line(line)
             if new_pv is not None:
-                self.update_checkmate_position(new_pv)
+                # Extract depth from the line for logging
+                depth_match = re.search(r'depth\s+(\d+)', line)
+                depth = int(depth_match.group(1)) if depth_match else 0
+                self.update_checkmate_position(new_pv, depth)
 
     def stop(self) -> None:
         """Stop both engines."""
