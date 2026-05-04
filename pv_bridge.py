@@ -2,332 +2,217 @@
 """
 PV Bridge Script for 4pchess and 4pcheckmate.
 
-Runs both engines simultaneously, parses PV lines from 4pchess's stdout,
-and updates 4pcheckmate's position by efficiently undoing/applying only
-the changed moves.
+Simple threaded bridge: reads PV lines from 4pchess and mirrors
+positions to 4pcheckmate for checkmate discovery.
 """
 
 import subprocess
 import sys
 import re
 import signal
+import threading
+import queue
 from pathlib import Path
 from typing import List, Optional
-from time import sleep
 
 # Paths to engine binaries
 CHESS_CLI = Path(__file__).parent / "4pchess" / "cli"
 CHECKMATE_CLI = Path(__file__).parent / "4pcheckmate" / "cli"
 
 
-class EngineProcess:
-    """Wrapper for an engine subprocess."""
+def reader_thread(proc, out_queue, err_queue, name):
+    """Read stdout/stderr from a subprocess into queues."""
+    def read_stdout():
+        for line in iter(proc.stdout.readline, ''):
+            if not line:
+                break
+            out_queue.put(line.strip())
+    
+    def read_stderr():
+        for line in iter(proc.stderr.readline, ''):
+            if not line:
+                break
+            err_queue.put(line.strip())
+    
+    threading.Thread(target=read_stdout, name=f"{name}-out").start()
+    threading.Thread(target=read_stderr, name=f"{name}-err").start()
 
-    def __init__(self, executable: Path):
-        self.process = subprocess.Popen(
-            [executable],
+
+class Engine:
+    """Simple engine wrapper with threaded I/O."""
+    
+    def __init__(self, path: Path, name: str):
+        self.name = name
+        self.proc = subprocess.Popen(
+            [path],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            bufsize=1,
+            bufsize=1
         )
-        self.buffer = ""
-        self.stderr_buffer = ""
-
-    def send(self, command: str) -> None:
+        self.out_queue = queue.Queue()
+        self.err_queue = queue.Queue()
+        reader_thread(self.proc, self.out_queue, self.err_queue, name)
+    
+    def send(self, cmd: str) -> None:
         """Send a command to the engine."""
-        print(f"[{self.process.args[0].name}] {command}")
-        if self.process.stdin and not self.process.poll():
-            self.process.stdin.write(command + "\n")
-            self.process.stdin.flush()
-
-    def read_line(self) -> Optional[str]:
-        """Read a complete line from stdout, or None if not available."""
-        if self.process.stdout is None:
-            return None
-
-        # Check if process has exited
-        if self.process.poll() is not None:
-            return None
-
-        # First, check if we already have a complete line in the buffer
-        if '\n' in self.buffer:
-            line, self.buffer = self.buffer.split('\n', 1)
-            return line.strip()
-
-        # Try to read more data if no complete line in buffer
-        import select
-        import os
-
-        fd = self.process.stdout.fileno()
-        try:
-            # Check if there's data available (non-blocking)
-            ready, _, _ = select.select([fd], [], [], 0)
-            if ready:
-                chunk = os.read(fd, 1024).decode('utf-8', errors='replace')
-                if chunk:
-                    self.buffer += chunk
-        except (OSError, ValueError):
-            pass
-
-        # Check again for complete lines after reading
-        if '\n' in self.buffer:
-            line, self.buffer = self.buffer.split('\n', 1)
-            return line.strip()
-
-        return None
-
-    def read_stderr_line(self) -> Optional[str]:
-        """Read a complete line from stderr, or None if not available."""
-        if self.process.stderr is None:
-            return None
-
-        # Check if process has exited
-        if self.process.poll() is not None:
-            return None
-
-        # First, check if we already have a complete line in the buffer
-        if '\n' in self.stderr_buffer:
-            line, self.stderr_buffer = self.stderr_buffer.split('\n', 1)
-            return line.strip()
-
-        # Try to read more data if no complete line in buffer
-        import select
-        import os
-
-        fd = self.process.stderr.fileno()
-        try:
-            # Check if there's data available (non-blocking)
-            ready, _, _ = select.select([fd], [], [], 0)
-            if ready:
-                chunk = os.read(fd, 1024).decode('utf-8', errors='replace')
-                if chunk:
-                    self.stderr_buffer += chunk
-        except (OSError, ValueError):
-            pass
-
-        # Check again for complete lines after reading
-        if '\n' in self.stderr_buffer:
-            line, self.stderr_buffer = self.stderr_buffer.split('\n', 1)
-            return line.strip()
-
-        return None
-
-    def quit(self) -> None:
-        """Send quit command and terminate."""
-        try:
-            self.send("quit")
-            self.process.wait(timeout=2)
-        except (subprocess.TimeoutExpired, Exception):
-            self.process.terminate()
+        print(f"[{self.name} <-] {cmd}")
+        self.proc.stdin.write(cmd + "\n")
+        self.proc.stdin.flush()
+    
+    def get_lines(self) -> List[str]:
+        """Get all available output lines."""
+        lines = []
+        while True:
             try:
-                self.process.wait(timeout=2)
+                lines.append(self.out_queue.get_nowait())
+            except queue.Empty:
+                break
+        return lines
+    
+    def get_errors(self) -> List[str]:
+        """Get all available stderr lines."""
+        lines = []
+        while True:
+            try:
+                lines.append(self.err_queue.get_nowait())
+            except queue.Empty:
+                break
+        return lines
+    
+    def quit(self) -> None:
+        """Stop the engine."""
+        self.send("quit")
+        try:
+            self.proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=2)
             except subprocess.TimeoutExpired:
-                self.process.kill()
+                self.proc.kill()
 
 
 class PVBridge:
-    """Bridge between 4pchess and 4pcheckmate engines."""
-
-    # Regex to parse: info depth 12 time 245 nodes 45000 pv e2-e4 e7-e5 score 45 nps 183673
-    INFO_REGEX = re.compile(
-        r'info\s+'
-        r'depth\s+(\d+)\s+'
-        r'(?:time\s+\d+\s+)?'
-        r'(?:nodes\s+\d+\s+)?'
-        r'pv\s+(.+?)(?:\s+score|$)'
-    )
-
-    def __init__(self, chess_cli: Path, checkmate_cli: Path):
-        self.chess_engine = EngineProcess(chess_cli)
-        self.checkmate_engine = EngineProcess(checkmate_cli)
-        self.current_pv: List[str] = []
+    """Bridge 4pchess PV output to 4pcheckmate positions."""
+    
+    INFO_RE = re.compile(r'info\s+depth\s+(\d+).*?pv\s+(.+?)(?:\s+score|\s*$)')
+    
+    def __init__(self, chess_path: Path, checkmate_path: Path):
+        self.chess = Engine(chess_path, "4pchess")
+        self.checkmate = Engine(checkmate_path, "4pcheckmate")
         self.running = False
         self.depth = 100
         self.position = "startpos"
-
-    def set_position(self, fen_or_startpos: str) -> None:
-        """Set the position for both engines."""
-        self.position = fen_or_startpos
-
-        if fen_or_startpos == "startpos":
-            # Send standard position setup
-            self.chess_engine.send("position startpos")
-            self.checkmate_engine.send("position startpos")
-        elif fen_or_startpos.startswith("fen "):
-            self.chess_engine.send(f"position {fen_or_startpos}")
-            self.checkmate_engine.send(f"position {fen_or_startpos}")
+        self.current_pv = []
+    
+    def set_position(self, pos: str) -> None:
+        """Set position on both engines."""
+        self.position = pos
+        if pos == "startpos":
+            self.chess.send("position startpos")
+            self.checkmate.send("position startpos")
+        elif pos.startswith("fen "):
+            self.chess.send(f"position {pos}")
+            self.checkmate.send(f"position {pos}")
         else:
-            # Assume it's a FEN string
-            self.chess_engine.send(f"position fen {fen_or_startpos}")
-            self.checkmate_engine.send(f"position fen {fen_or_startpos}")
-
+            self.chess.send(f"position fen {pos}")
+            self.checkmate.send(f"position fen {pos}")
+    
     def set_depth(self, depth: int) -> None:
-        """Set the search depth."""
         self.depth = depth
-
-    def find_common_prefix_length(self, list1: List[str], list2: List[str]) -> int:
-        """Find the length of the longest common prefix of two lists."""
-        min_len = min(len(list1), len(list2))
-        for i in range(min_len):
-            if list1[i] != list2[i]:
-                return i
-        return min_len
-
-    def update_checkmate_position(self, new_pv: List[str], depth: int = 0) -> None:
-        """
-        Update 4pcheckmate's position to match the new PV.
-        Sends stop, position with full move list, and go.
-        """
-        if new_pv == self.current_pv:
+    
+    def update_checkmate(self, pv: List[str], depth: int) -> None:
+        """Update 4pcheckmate to search the PV position."""
+        if pv == self.current_pv:
             return
-
-        print(f"[Bridge PV] Depth {depth}: {' '.join(new_pv)}")
-
-        common_len = self.find_common_prefix_length(self.current_pv, new_pv)
-        num_new = len(new_pv) - common_len
-
-        if num_new > 0:
-            print(f"[Bridge Checkmate] New moves: {' '.join(new_pv[common_len:])}")
-
-        self.checkmate_engine.send("stop")
-        sleep(0.1)
-
-        # Build position command with full move list
-        moves_str = ' '.join(new_pv)
+        
+        print(f"[Bridge] PV @ depth {depth}: {' '.join(pv)}")
+        
+        # Send stop, new position, go
+        self.checkmate.send("stop")
+        
+        moves = ' '.join(pv)
         if self.position == "startpos":
-            self.checkmate_engine.send(f"position startpos moves {moves_str}")
+            self.checkmate.send(f"position startpos moves {moves}")
         elif self.position.startswith("fen "):
-            self.checkmate_engine.send(f"position {self.position} moves {moves_str}")
+            self.checkmate.send(f"position {self.position} moves {moves}")
         else:
-            self.checkmate_engine.send(f"position fen {self.position} moves {moves_str}")
-
-        self.checkmate_engine.send("go")
-
-        self.current_pv = new_pv.copy()
-        print(f"[Bridge Checkmate] Position updated: {len(self.current_pv)} move(s) in PV")
-
-    def parse_info_line(self, line: str) -> Optional[List[str]]:
-        """Parse an info line and extract the PV moves."""
-        match = self.INFO_REGEX.match(line)
-        if match:
-            pv_part = match.group(2).strip()
-            moves = pv_part.split()
-            return moves
-        return None
-
-    def log_engine_output(self, engine_name: str, line: str) -> None:
-        """Log output from an engine."""
-        print(f"[{engine_name}] {line}")
-
+            self.checkmate.send(f"position fen {self.position} moves {moves}")
+        
+        self.checkmate.send("go")
+        self.current_pv = pv
+    
     def run(self) -> None:
-        """Main loop: start 4pchess search and process output from both engines."""
+        """Main loop: process 4pchess output, mirror to 4pcheckmate."""
         self.running = True
-
-        # Start the search on 4pchess
-        self.chess_engine.send(f"go depth {self.depth}")
-
+        
+        # Start 4pchess search
+        self.chess.send(f"go depth {self.depth}")
+        
         while self.running:
-            # Read from 4pchess engine stdout (main search)
-            line = self.chess_engine.read_line()
-            if line is not None:
-                self.log_engine_output("4pchess", line)
-
-                # Check for search completion
-                if line.startswith("bestmove "):
-                    print(f"[Bridge] Search complete: {line}")
-                    break
-
-                # Parse info line with PV
-                new_pv = self.parse_info_line(line)
-                if new_pv is not None:
-                    # Extract depth from the line for logging
-                    depth_match = re.search(r'depth\s+(\d+)', line)
-                    depth = int(depth_match.group(1)) if depth_match else 0
-                    self.update_checkmate_position(new_pv, depth)
-
-            # Read from 4pchess engine stderr
-            chess_stderr = self.chess_engine.read_stderr_line()
-            if chess_stderr is not None:
-                print(f"[4pchess STDERR] {chess_stderr}")
-
-            # Read from 4pcheckmate engine stdout (checkmate discovery)
-            checkmate_line = self.checkmate_engine.read_line()
-            if checkmate_line is not None:
-                self.log_engine_output("4pcheckmate", checkmate_line)
-
-            # Read from 4pcheckmate engine stderr
-            checkmate_stderr = self.checkmate_engine.read_stderr_line()
-            if checkmate_stderr is not None:
-                print(f"[4pcheckmate STDERR] {checkmate_stderr}")
-
+            # Process 4pchess output
+            for line in self.chess.get_lines():
+                print(f"[4pchess ->] {line}")
+                
+                # Parse PV info
+                m = self.INFO_RE.match(line)
+                if m:
+                    depth = int(m.group(1))
+                    pv_moves = m.group(2).strip().split()
+                    self.update_checkmate(pv_moves, depth)
+            
+            # Show 4pchess errors
+            for line in self.chess.get_errors():
+                print(f"[4pchess ERR] {line}")
+            
+            # Show 4pcheckmate output
+            for line in self.checkmate.get_lines():
+                print(f"[4pcheckmate ->] {line}")
+            
+            # Show 4pcheckmate errors
+            for line in self.checkmate.get_errors():
+                print(f"[4pcheckmate ERR] {line}")
+    
     def stop(self) -> None:
         """Stop both engines."""
         self.running = False
-        self.chess_engine.send("stop")
-        self.chess_engine.quit()
-        self.checkmate_engine.quit()
+        self.chess.send("stop")
+        self.chess.quit()
+        self.checkmate.quit()
 
 
 def main():
     import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Bridge 4pchess PV lines to 4pcheckmate engine"
-    )
-    parser.add_argument(
-        "--depth",
-        type=int,
-        default=100,
-        help="Search depth (default: 100)",
-    )
-    parser.add_argument(
-        "--position",
-        type=str,
-        default="startpos",
-        help='Starting position: "startpos" or FEN string (default: startpos)',
-    )
-    parser.add_argument(
-        "--chess-cli",
-        type=Path,
-        default=CHESS_CLI,
-        help=f"Path to 4pchess CLI (default: {CHESS_CLI})",
-    )
-    parser.add_argument(
-        "--checkmate-cli",
-        type=Path,
-        default=CHECKMATE_CLI,
-        help=f"Path to 4pcheckmate CLI (default: {CHECKMATE_CLI})",
-    )
-
+    
+    parser = argparse.ArgumentParser(description="Bridge 4pchess PV to 4pcheckmate")
+    parser.add_argument("--depth", type=int, default=100, help="Search depth")
+    parser.add_argument("--position", type=str, default="startpos", help="startpos or FEN")
+    parser.add_argument("--chess-cli", type=Path, default=CHESS_CLI)
+    parser.add_argument("--checkmate-cli", type=Path, default=CHECKMATE_CLI)
+    
     args = parser.parse_args()
-
-    # Validate executables exist
-    if not args.chess_cli.exists():
-        print(f"Error: 4pchess CLI not found: {args.chess_cli}", file=sys.stderr)
-        sys.exit(1)
-    if not args.checkmate_cli.exists():
-        print(f"Error: 4pcheckmate CLI not found: {args.checkmate_cli}", file=sys.stderr)
-        sys.exit(1)
-
+    
+    for path, name in [(args.chess_cli, "4pchess"), (args.checkmate_cli, "4pcheckmate")]:
+        if not path.exists():
+            print(f"Error: {name} not found: {path}", file=sys.stderr)
+            sys.exit(1)
+    
     bridge = PVBridge(args.chess_cli, args.checkmate_cli)
     bridge.set_position(args.position)
     bridge.set_depth(args.depth)
-
-    # Handle Ctrl+C gracefully
-    def signal_handler(sig, frame):
-        print("\n[Bridge] Stopping engines...")
+    
+    def handler(sig, frame):
+        print("\n[Bridge] Stopping...")
         bridge.stop()
         sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-
-    print(f"[Bridge] Starting 4pchess and 4pcheckmate")
-    print(f"[Bridge] Position: {args.position}")
-    print(f"[Bridge] Depth: {args.depth}")
-    print("[Bridge] Press Ctrl+C to stop")
-
+    
+    signal.signal(signal.SIGINT, handler)
+    
+    print(f"[Bridge] Starting: position={args.position}, depth={args.depth}")
+    print("[Bridge] Ctrl+C to stop")
+    
     bridge.run()
     bridge.stop()
 
