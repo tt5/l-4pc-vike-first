@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <chrono>
+#include <atomic>
 #include "board.h"
 #include "player.h"
 #include "transposition_table.h"
@@ -26,6 +27,10 @@
             result = Search(__VA_ARGS__); \
         } \
     } while(0)
+
+namespace {
+  std::atomic<int64_t> g_unique_checkmates_found{0};
+}
 
 namespace chess {
 
@@ -126,6 +131,10 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
 
   num_nodes_++;
+  if (num_nodes_ % 200000 == 0) {
+    std::cout << "nodes: " << num_nodes_ 
+              << " checkmates: " << g_unique_checkmates_found.load() << std::endl;
+  }
   if (canceled_) {
     return std::nullopt;
   }
@@ -429,7 +438,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
       }
     }
 
-    constexpr int kMaxExtensionsPerPath = 1;
+    constexpr int kMaxExtensionsPerPath = 2;
     if (depth < 2 && move.IsCapture() && ss->extension_count < kMaxExtensionsPerPath) {
         r = -1;
     }
@@ -442,7 +451,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
           - (depth/2)*(r > 0)*(depth>3)
           - (depth/4)*(r > 0)*(depth>7)
           - (depth/8)*(r > 0)*(depth>15)
-          - (depth/16)*(r > 0)*(depth>31)
+          //- (depth/16)*(r > 0)*(depth>31)
           + (r < 0);
       SEARCH_OR_EVAL(value_and_move_or, new_depth,
           ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -462,7 +471,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
                 - (depth/2)*(r > 0)*(depth>3)
                 - (depth/4)*(r > 0)*(depth>7)
                 - (depth/8)*(r > 0)*(depth>15)
-                - (depth/16)*(r > 0)*(depth>31)
+                //- (depth/16)*(r > 0)*(depth>31)
                 + (r < 0);
             SEARCH_OR_EVAL(value_and_move_or, new_depth,
                 ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -582,9 +591,15 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
       checkmateboard.UndoMove();
       int64_t hash_key = checkmateboard.HashKey();
 
+      if (!checkmate_table_->Contains(hash_key)) { // the check is not strictly necessary
+        bloom_filter_->Add(hash_key); // idempotent for already existing positions
+        checkmate_table_->Insert(hash_key); // checks if the key already exists anyway
+        g_unique_checkmates_found++;
+        if (g_unique_checkmates_found % 400000 == 0) {
+          std::cout << "Found " << g_unique_checkmates_found << " unique checkmates." << std::endl;
+        }
+      }
 
-      bloom_filter_->Add(hash_key);
-      checkmate_table_->Insert(hash_key);
   }
 
   ScoreBound bound;
