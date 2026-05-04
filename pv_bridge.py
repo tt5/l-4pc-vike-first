@@ -183,13 +183,13 @@ class PVBridge:
         if new_pv == self.current_pv:
             return
 
-        print(f"[PV] Depth {depth}: {' '.join(new_pv)}")
+        print(f"[Bridge PV] Depth {depth}: {' '.join(new_pv)}")
 
         common_len = self.find_common_prefix_length(self.current_pv, new_pv)
         num_new = len(new_pv) - common_len
 
         if num_new > 0:
-            print(f"[Checkmate] New moves: {' '.join(new_pv[common_len:])}")
+            print(f"[Bridge Checkmate] New moves: {' '.join(new_pv[common_len:])}")
 
         self.checkmate_engine.send("stop")
         sleep(0.1)
@@ -206,7 +206,7 @@ class PVBridge:
         self.checkmate_engine.send("go")
 
         self.current_pv = new_pv.copy()
-        print(f"[Checkmate] Position updated: {len(self.current_pv)} move(s) in PV")
+        print(f"[Bridge Checkmate] Position updated: {len(self.current_pv)} move(s) in PV")
 
     def parse_info_line(self, line: str) -> Optional[List[str]]:
         """Parse an info line and extract the PV moves."""
@@ -217,15 +217,9 @@ class PVBridge:
             return moves
         return None
 
-    def should_log_engine_output(self, line: str) -> bool:
-        """Check if an engine output line should be logged."""
-        # Log all engine output
-        return True
-
-    def log_engine_output(self, engine_name: str, line: str, force: bool = False) -> None:
+    def log_engine_output(self, engine_name: str, line: str) -> None:
         """Log output from an engine."""
-        if force or self.should_log_engine_output(line):
-            print(f"[{engine_name}] {line}")
+        print(f"[{engine_name}] {line}")
 
     def run(self) -> None:
         """Main loop: start 4pchess search and process output from both engines."""
