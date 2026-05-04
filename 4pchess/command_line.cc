@@ -127,9 +127,15 @@ void CommandLine::StartEvaluation() {
 
     std::optional<milliseconds> time_limit;
 
+    int same_depth_runs = 0;
+
+    std::string old_pv_line;
+    std::string new_pv_line;
+
     while (!player->IsCanceled()
            && (!options.depth.has_value() || depth <= *options.depth)
            && depth < 100) {
+
       // start again from the same board position
       auto res = player->MakeMove(*board, depth);
 
@@ -146,6 +152,7 @@ void CommandLine::StartEvaluation() {
           score_centipawn = -score_centipawn;
         }
         std::string pv = GetPVStr(*player);
+        new_pv_line = pv;
 
         std::cout
           << "info"
@@ -170,7 +177,23 @@ void CommandLine::StartEvaluation() {
         break;
       }
 
+      /*
+      // pv line still changes between depth
+      if (same_depth_runs == 0) {
+        old_pv_line = new_pv_line;
+        same_depth_runs++;
+      } else {
+        if (old_pv_line == new_pv_line) {
+          same_depth_runs = 0;
+          depth++;
+        } else {
+          old_pv_line = new_pv_line;
+        }
+      }
+      */
       depth++;
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+
     }
 
     if (best_move.has_value()) {

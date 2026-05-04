@@ -153,23 +153,21 @@ class PVBridge:
         if num_new > 0:
             print(f"[Checkmate] Applying {num_new} new move(s): {' '.join(new_pv[common_len:])}")
 
+        self.checkmate_engine.send("stop")
+
         # Undo moves that are no longer in the new PV (in reverse order)
         num_to_undo = len(self.current_pv) - common_len
         for i in range(num_to_undo):
-            self.checkmate_engine.send("stop")
-            sleep(0.2)
             self.checkmate_engine.send("undo")
             sleep(0.2)
-            self.checkmate_engine.send("go")
 
         # Apply new moves from the common prefix onwards
         new_moves = new_pv[common_len:]
         for move in new_moves:
-            self.checkmate_engine.send("stop")
-            sleep(0.2)
             self.checkmate_engine.send(f"move {move}")
             sleep(0.2)
-            self.checkmate_engine.send("go")
+
+        self.checkmate_engine.send("go")
 
         self.current_pv = new_pv.copy()
         print(f"[Checkmate] Position updated: {len(self.current_pv)} move(s) in PV")

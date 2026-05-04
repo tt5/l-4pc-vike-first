@@ -691,14 +691,6 @@ AlphaBetaPlayer::MakeMoveSingleThread(
 
   std::shared_ptr<PVInfo> old_pv_line = nullptr;
 
-  auto GetPVLine = [](const PVInfo* pv) { std::vector<Move> line;
-    for (const PVInfo* cur = pv; cur && cur->GetBestMove(); cur = cur->GetChild().get())
-      line.push_back(*cur->GetBestMove());
-    return line;
-  };
-
-  int same_depth_runs = 0;
-
   while (next_depth <= max_depth) {
     //std::cout << "next_depth " << next_depth << std::endl;
 
@@ -713,7 +705,6 @@ AlphaBetaPlayer::MakeMoveSingleThread(
     alpha = std::max(prev - delta, -kMateValue);
     beta = std::min(prev + delta, kMateValue);
     int fail_cnt = 0;
-
 
     while (true) {
         move_and_value = Search(
@@ -762,19 +753,7 @@ AlphaBetaPlayer::MakeMoveSingleThread(
       res = move_and_value;
       searched_depth = next_depth;
 
-
-      std::shared_ptr<PVInfo> new_pv_line = pv_info.Copy();
-      if (same_depth_runs == 0) {
-        old_pv_line = new_pv_line;
-        same_depth_runs++;
-      } else if (same_depth_runs == 1) {
-        if (GetPVLine(old_pv_line.get()) == GetPVLine(new_pv_line.get())) {
-          same_depth_runs = 0;
-          next_depth++;
-        } else {
-          old_pv_line = new_pv_line;
-        }
-      }
+      next_depth++;
 
       int evaluation = std::get<0>(*move_and_value);
       if (std::abs(evaluation) == kMateValue) {
