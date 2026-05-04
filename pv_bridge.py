@@ -181,30 +181,54 @@ class PVBridge:
             return moves
         return None
 
+    def should_log_engine_output(self, line: str) -> bool:
+        """Check if an engine output line should be logged."""
+        # Log checkmate-related messages from both engines
+        if "checkmate" in line.lower():
+            return True
+        if "checkmate_skips" in line:
+            return True
+        if "checkmates:" in line:
+            return True
+        if line.startswith("nodes: "):
+            return True
+        return False
+
+    def log_engine_output(self, engine_name: str, line: str) -> None:
+        """Log output from an engine."""
+        if self.should_log_engine_output(line):
+            print(f"[{engine_name}] {line}")
+
     def run(self) -> None:
-        """Main loop: start 4pchess search and process its output."""
+        """Main loop: start 4pchess search and process output from both engines."""
         self.running = True
 
         # Start the search on 4pchess
         self.chess_engine.send(f"go depth {self.depth}")
 
         while self.running:
+            # Read from 4pchess engine (main search)
             line = self.chess_engine.read_line()
-            if line is None:
-                continue
+            if line is not None:
+                self.log_engine_output("4pchess", line)
 
-            # Check for search completion
-            if line.startswith("bestmove "):
-                print(f"[Bridge] Search complete: {line}")
-                break
+                # Check for search completion
+                if line.startswith("bestmove "):
+                    print(f"[Bridge] Search complete: {line}")
+                    break
 
-            # Parse info line with PV
-            new_pv = self.parse_info_line(line)
-            if new_pv is not None:
-                # Extract depth from the line for logging
-                depth_match = re.search(r'depth\s+(\d+)', line)
-                depth = int(depth_match.group(1)) if depth_match else 0
-                self.update_checkmate_position(new_pv, depth)
+                # Parse info line with PV
+                new_pv = self.parse_info_line(line)
+                if new_pv is not None:
+                    # Extract depth from the line for logging
+                    depth_match = re.search(r'depth\s+(\d+)', line)
+                    depth = int(depth_match.group(1)) if depth_match else 0
+                    self.update_checkmate_position(new_pv, depth)
+
+            # Read from 4pcheckmate engine (checkmate discovery)
+            checkmate_line = self.checkmate_engine.read_line()
+            if checkmate_line is not None:
+                self.log_engine_output("4pcheckmate", checkmate_line)
 
     def stop(self) -> None:
         """Stop both engines."""
