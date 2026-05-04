@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <chrono>
+#include <atomic>
 #include "board.h"
 #include "player.h"
 #include "transposition_table.h"
@@ -26,6 +27,10 @@
             result = Search(__VA_ARGS__); \
         } \
     } while(0)
+
+namespace {
+  std::atomic<int64_t> g_checkmate_skips{0};
+}
 
 namespace chess {
 
@@ -126,6 +131,10 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
 
   num_nodes_++;
+  if (num_nodes_ % 400000 == 0) {
+    std::cout << "nodes: " << num_nodes_ 
+              << " checkmate_skips: " << g_checkmate_skips.load() << std::endl;
+  }
   if (canceled_) {
     return std::nullopt;
   }
@@ -386,6 +395,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
     if (bloom_filter_->MaybeContains(board.HashKey()) &&
         checkmate_table_->Contains(board.HashKey())) {
       board.UndoMove();
+      g_checkmate_skips++;
       continue;
     }
 
@@ -429,7 +439,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
       }
     }
 
-    constexpr int kMaxExtensionsPerPath = 1;
+    constexpr int kMaxExtensionsPerPath = 2;
     if (depth < 2 && move.IsCapture() && ss->extension_count < kMaxExtensionsPerPath) {
         r = -1;
     }
@@ -442,7 +452,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
           - (depth/2)*(r > 0)*(depth>3)
           - (depth/4)*(r > 0)*(depth>7)
           - (depth/8)*(r > 0)*(depth>15)
-          - (depth/16)*(r > 0)*(depth>31)
+          //- (depth/16)*(r > 0)*(depth>31)
           + (r < 0);
       SEARCH_OR_EVAL(value_and_move_or, new_depth,
           ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -462,7 +472,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
                 - (depth/2)*(r > 0)*(depth>3)
                 - (depth/4)*(r > 0)*(depth>7)
                 - (depth/8)*(r > 0)*(depth>15)
-                - (depth/16)*(r > 0)*(depth>31)
+                //- (depth/16)*(r > 0)*(depth>31)
                 + (r < 0);
             SEARCH_OR_EVAL(value_and_move_or, new_depth,
                 ss+1, NonPV, thread_state, board, ply + 1, new_depth,
