@@ -147,6 +147,7 @@ void CommandLine::StartEvaluation() {
         }
         std::string pv = GetPVStr(*player);
 
+        /*
         std::cout
           << "info"
           << " depth " << depth
@@ -158,12 +159,13 @@ void CommandLine::StartEvaluation() {
           std::cout << " nps " << *nps;
         }
         std::cout << std::endl;
+        */
 
         best_move = std::get<1>(*res);
 
         if (std::abs(score_centipawn) == kMateValue) {
           std::cout << "checkmate score" << std::endl;
-          abort();
+          //abort();
         }
 
       } else {
@@ -218,48 +220,6 @@ void CommandLine::HandleCommand(
       return;
     }
     board_->UndoMove();
-    return;
-  } else if (parts[0] == "checkmate_discovery") {
-    // Checkmate discovery mode
-    int max_checkmates = 100;
-    std::string output_file = "checkmates.txt";
-
-    // Parse optional parameters
-    for (size_t i = 1; i < parts.size(); i++) {
-      if (parts[i] == "--max-checkmates" && i + 1 < parts.size()) {
-        auto val = ParseInt(parts[i + 1]);
-        if (val.has_value() && *val > 0) {
-          max_checkmates = *val;
-          i++;
-        }
-      } else if (parts[i] == "--output-file" && i + 1 < parts.size()) {
-        output_file = parts[i + 1];
-        i++;
-      }
-    }
-
-    std::cout << "Starting checkmate discovery mode..." << std::endl;
-    std::cout << "Max checkmates: " << max_checkmates << std::endl;
-    std::cout << "Output file: " << output_file << std::endl;
-
-    // Enable checkmate discovery mode
-    player_options_.checkmate_discovery_mode = true;
-    player_options_.max_checkmates_to_discover = max_checkmates;
-    player_options_.checkmate_output_file = output_file;
-
-    // Recreate player with new options
-    StopEvaluation();
-    player_ = std::make_shared<AlphaBetaPlayer>(player_options_);
-
-    // Reset to starting position
-    ResetBoard();
-
-    // Run search with infinite depth
-    EvaluationOptions options;
-    options.infinite = true;
-    SetEvaluationOptions(options);
-    StartEvaluation();
-
     return;
   }
   const auto& command = parts[0];

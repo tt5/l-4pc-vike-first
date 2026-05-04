@@ -2848,13 +2848,23 @@ Move Move::Unpack(uint32_t packed, const Board& board) {
   bool is_en_passant = (packed >> 20) & 1;
 
   if (is_castling) {
-    // For castling, we need to determine the rook move based on king's movement
     CastlingRights rights = board.GetCastlingRights(board.GetTurn());
-    // Rook move is derived from king's from/to
-    if (to_c > from_c) {  // Kingside
-      return Move(from_r, from_c, to_r, to_c, from_r, 13, from_r, to_c - 1, rights);
-    } else {  // Queenside
-      return Move(from_r, from_c, to_r, to_c, from_r, 0, from_r, to_c + 1, rights);
+    PlayerColor color = board.GetTurn().GetColor();
+    
+    if (color == RED || color == YELLOW) {
+      // Vertical players: rooks at columns 3 and 10
+      if (to_c > from_c) {  // Kingside (toward column 10)
+        return Move(from_r, from_c, to_r, to_c, from_r, 10, from_r, to_c - 1, rights);
+      } else {  // Queenside (toward column 3)
+        return Move(from_r, from_c, to_r, to_c, from_r, 3, from_r, to_c + 1, rights);
+      }
+    } else {
+      // Horizontal players (BLUE, GREEN): rooks at rows 3 and 10
+      if (to_r > from_r) {  // Kingside (toward row 10)
+        return Move(from_r, from_c, to_r, to_c, 10, from_c, to_r - 1, from_c, rights);
+      } else {  // Queenside (toward row 3)
+        return Move(from_r, from_c, to_r, to_c, 3, from_c, to_r + 1, from_c, rights);
+      }
     }
   }
 
