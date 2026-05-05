@@ -125,7 +125,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
 
   num_nodes_++;
-  if (num_nodes_ % 800000 == 0) {
+  if (num_nodes_ % 2000000 == 0) {
     std::cout << "nodes: " << num_nodes_ 
               << " checkmates: " << g_unique_checkmates_found.load() << std::endl;
   }
