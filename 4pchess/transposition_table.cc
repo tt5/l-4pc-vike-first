@@ -63,24 +63,37 @@ void TranspositionTable::Save(
     ScoreBound bound, bool is_pv) {
   size_t n = key & (table_size_ - 1);
   HashTableEntry& entry = hash_table_[n];
-  if (bound == EXACT
-      || entry.key != key
-      || entry.depth() <= static_cast<uint8_t>(depth)
-      || entry.generation() != generation_) { // Replace old generation entries
-    entry.key = key;
-    entry.set_depth(static_cast<uint8_t>(depth));
-    if (move.has_value()) {
-      entry.move = move.value();
-      entry.set_has_move(true);
-    } else {
-      entry.set_has_move(false);
-    }
-    entry.SetScore(score);
-    entry.eval = static_cast<int8_t>(eval);
-    entry.set_bound(bound);
-    entry.set_is_pv(is_pv);
-    entry.set_generation(generation_);
+  
+  // Check if we should replace this entry
+  const uint8_t current_depth = entry.gen_depth & 0x3F;
+  const uint8_t current_generation = entry.gen_depth >> 6;
+  
+  const bool should_replace = 
+      bound == EXACT ||
+      entry.key == 0 ||
+      entry.key == key ||
+      current_depth <= static_cast<uint8_t>(depth) ||
+      current_generation != generation_;
+      
+  if (!should_replace) {
+    return;
   }
+  
+  // Direct field writes with bit manipulation
+  entry.key = key;
+  entry.gen_depth = (generation_ << 6) | (static_cast<uint8_t>(depth) & 0x3F);
+  
+  // Pack bound, is_pv, and has_move flags
+  uint8_t bound_flags = (static_cast<uint8_t>(bound) & 0x3) |
+                        (static_cast<uint8_t>(is_pv) << 2);
+  if (move.has_value()) {
+    entry.move = move.value();
+    bound_flags |= 0x08; // set has_move bit
+  }
+  entry.bound_is_pv = bound_flags;
+  
+  entry.SetScore(score);
+  entry.eval = static_cast<int8_t>(eval);
 }
 
 void TranspositionTable::NewSearch() {

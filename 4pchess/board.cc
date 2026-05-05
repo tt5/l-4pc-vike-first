@@ -1232,7 +1232,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                     //*current++ = Move(from, {row - 1, col});
                     new (current++) Move(from_row, from_col, from_row - 1, from_col, 0);
 
-                    /*
                     // Blue queenside castling
                     if (current_color == BLUE &&
                         castling_rights.Queenside() && 
@@ -1265,7 +1264,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                             castling_rights
                         );
                     }
-                    */
                   } else if (captured.GetTeam() != my_team) {
                     //*current++ = Move(from, {row - 1, col}, captured, castling_rights);
                     new (current++) Move(from_row, from_col, from_row - 1, from_col, captured.GetRaw(), castling_rights);
@@ -1279,7 +1277,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                     //*current++ = Move(from, {row, col - 1});
                     new (current++) Move(from_row, from_col, from_row, from_col - 1, 0);
 
-                    /*
                     // Red queenside castling - optimized
                     if (current_color == RED &&
                         castling_rights.Queenside() &&
@@ -1312,7 +1309,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                             castling_rights
                         );
                     }   
-                    */
                   } else if (captured.GetTeam() != my_team) {
                     //*current++ = Move(from, {row, col - 1}, captured, castling_rights);
                     new (current++) Move(from_row, from_col, from_row, from_col - 1, captured.GetRaw(), castling_rights);
@@ -1326,8 +1322,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                     //*current++ = Move(from, {row, col + 1});
                     new (current++) Move(from_row, from_col, from_row, from_col + 1, 0);
 
-                    /*
-                    // RED kingside castling - optimized
                     if (current_color == RED &&
                         castling_rights.Kingside() &&
                         !location_to_piece_[13][9].Present() &&  // knight
@@ -1359,7 +1353,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                             castling_rights
                         );
                     }
-                    */
                   } else if (captured.GetTeam() != my_team) {
                     //*current++ = Move(from, {row, col + 1}, captured, castling_rights);
                     new (current++) Move(from_row, from_col, from_row, from_col + 1, captured.GetRaw(), castling_rights);
@@ -1373,7 +1366,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                     //*current++ = Move(from, {row + 1, col});
                     new (current++) Move(from_row, from_col, from_row + 1, from_col, 0);
 
-                    /*
                     // BLUE kingside castling
                       if (current_color == BLUE &&
                           castling_rights.Kingside() &&
@@ -1405,7 +1397,6 @@ Board::MoveGenResult Board::GetPseudoLegalMoves2(
                           castling_rights
                         );
                     }
-                    */
                   } else if (captured.GetTeam() != my_team) {
                     //*current++ = Move(from, {row + 1, col}, captured, castling_rights);
                     new (current++) Move(from_row, from_col, from_row + 1, from_col, captured.GetRaw(), castling_rights);
