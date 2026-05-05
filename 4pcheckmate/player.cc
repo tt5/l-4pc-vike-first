@@ -146,41 +146,6 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   bool is_root_node = ply == 1;
   bool is_pv_node = node_type != NonPV;
 
-  std::optional<Move> tt_move;
-  const HashTableEntry* tte = nullptr;
-  bool tt_hit = false;
-  int64_t key = board.HashKey();
-  auto* tt = thread_state.GetTranspositionTable();
-  if (tt != nullptr) {
-    tte = tt->Get(key);
-  }
-  if (tte != nullptr) {
-    if (tte->key == key) { // valid entry
-      tt_hit = true;
-      if (tte->depth() >= depth) {
-        // at non-PV nodes check for an early TT cutoff
-        if (!is_root_node
-            && !is_pv_node
-            && (tte->bound() == EXACT
-              || (tte->bound() == LOWER_BOUND && tte->GetScore() >= beta)
-              || (tte->bound() == UPPER_BOUND && tte->GetScore() <= alpha))
-            ) {
-
-          if (tte->has_move()) {
-              return std::make_tuple(
-                  std::min(beta, std::max(alpha, tte->GetScore())),
-                  tte->move);
-          }
-          return std::make_tuple(
-            std::min(beta, std::max(alpha, tte->GetScore())), std::nullopt);
-        }
-      }
-      if (tte->has_move()) {
-        tt_move = tte->move;
-      }
-    }
-  }
-
   //// Check for king capture first
   auto capture_info = board.CanCaptureKing();
   if (capture_info.from_row != -1) {
@@ -196,114 +161,103 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
     Move move(capture_info.from_row, capture_info.from_col,
               capture_info.to_row, capture_info.to_col, capture_raw);
 
-    if (tt != nullptr) {
-      tt->Save(key, 100, move, eval, eval, EXACT, false /*is_pv_node*/);
-    }
     //thread_state.ReleaseMoveBufferPartition();
     return std::make_tuple(eval, move);
   }
 
   int eval = 0;
-  if (tt_hit) {
-    if (tte->bound() == UPPER_BOUND) {
-      eval = board.PieceEvaluation();
-      eval = maximizing_player ? eval : -eval;
-    } else {
-      eval = tte->eval;
-    }
+  eval = board.PieceEvaluation();
+  
+  static const uint8_t LOG2_MOVES[256] = {
+      0, 0, 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+  };
+
+  static const uint8_t LOG2_THREATS[64] = {
+      0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4,
+      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5
+  };
+
+  static const int8_t THREAT_SCORE[64] = {
+      -8, -8, -8, -8, -8, -8, -8, -8,
+      -8, -8, -8, -8, -8, -8, -8, -8,
+      -8, -8,
+      8, 16, 24, 32, 40, 48, 56,
+      -56, -48, -40, -32, -24, -16,
+      -50, -50, -50, -50, -50, -50, -50, -50,
+      -50, -50, -50, -50, -50, -50, -50, -50,
+      -50, -50, -50, -50, -50, -50, -50, -50,
+      -50, -50, -50, -50, -50, -50, -50, -50
+  };
+
+  int moves_eval;
+  int threat_eval;
+
+  int logR = LOG2_MOVES[thread_state.TotalMoves()[RED]];
+  int logY = LOG2_MOVES[thread_state.TotalMoves()[YELLOW]];
+  int logB = LOG2_MOVES[thread_state.TotalMoves()[BLUE]];
+  int logG = LOG2_MOVES[thread_state.TotalMoves()[GREEN]];
+
+  int logRY = (logR + logY) << 2;  // 4 * sum
+  int logBG = (logB + logG) << 2;
+
+  int lb, sign;
+  if (logRY > logBG) {
+    lb = logRY + 1;
+    sign = (other_team != RED_YELLOW) ? 1 : -1;
+  } else if (logBG > logRY) {
+    lb = logBG + 1;
+    sign = (other_team != RED_YELLOW) ? -1 : 1;
   } else {
-    eval = board.PieceEvaluation();
-    
-    static const uint8_t LOG2_MOVES[256] = {
-        0, 0, 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
-    };
+    lb = logRY + 1;
+    sign = 0;
+  }
+  moves_eval = sign * (lb < 27 ? 10 : 5 * (lb - 25));
 
-    static const uint8_t LOG2_THREATS[64] = {
-        0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5,
-        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5
-    };
+  int logtR = LOG2_THREATS[thread_state.NThreats()[RED] & 63];
+  int logtY = LOG2_THREATS[thread_state.NThreats()[YELLOW] & 63];
+  int logtB = LOG2_THREATS[thread_state.NThreats()[BLUE] & 63];
+  int logtG = LOG2_THREATS[thread_state.NThreats()[GREEN] & 63];
 
-    static const int8_t THREAT_SCORE[64] = {
-        -8, -8, -8, -8, -8, -8, -8, -8,
-        -8, -8, -8, -8, -8, -8, -8, -8,
-        -8, -8,
-        8, 16, 24, 32, 40, 48, 56,
-        -56, -48, -40, -32, -24, -16,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50
-    };
+  int logtRY = (logtR + logtY) << 2;
+  int logtBG = (logtB + logtG) << 2;
 
-    int moves_eval;
-    int threat_eval;
+  int len_idx;
+  int threat_sign;
+  if (logtRY > logtBG) {
+    len_idx = logtRY;
+    threat_sign = (other_team != RED_YELLOW) ? 1 : -1;
+  } else if (logtBG > logtRY) {
+    len_idx = logtBG;
+    threat_sign = (other_team != RED_YELLOW) ? -1 : 1;
+  } else {
+    len_idx = 0;
+    threat_sign = 0;
+  }
 
-    int logR = LOG2_MOVES[thread_state.TotalMoves()[RED]];
-    int logY = LOG2_MOVES[thread_state.TotalMoves()[YELLOW]];
-    int logB = LOG2_MOVES[thread_state.TotalMoves()[BLUE]];
-    int logG = LOG2_MOVES[thread_state.TotalMoves()[GREEN]];
+  len_idx = (len_idx < 0) ? 0 : (len_idx > 63 ? 63 : len_idx);
+  threat_eval = threat_sign * THREAT_SCORE[len_idx];
 
-    int logRY = (logR + logY) << 2;  // 4 * sum
-    int logBG = (logB + logG) << 2;
+  eval += moves_eval + threat_eval;
 
-    int lb, sign;
-    if (logRY > logBG) {
-      lb = logRY + 1;
-      sign = (other_team != RED_YELLOW) ? 1 : -1;
-    } else if (logBG > logRY) {
-      lb = logBG + 1;
-      sign = (other_team != RED_YELLOW) ? -1 : 1;
-    } else {
-      lb = logRY + 1;
-      sign = 0;
-    }
-    moves_eval = sign * (lb < 27 ? 10 : 5 * (lb - 25));
-
-    int logtR = LOG2_THREATS[thread_state.NThreats()[RED] & 63];
-    int logtY = LOG2_THREATS[thread_state.NThreats()[YELLOW] & 63];
-    int logtB = LOG2_THREATS[thread_state.NThreats()[BLUE] & 63];
-    int logtG = LOG2_THREATS[thread_state.NThreats()[GREEN] & 63];
-
-    int logtRY = (logtR + logtY) << 2;
-    int logtBG = (logtB + logtG) << 2;
-
-    int len_idx;
-    int threat_sign;
-    if (logtRY > logtBG) {
-      len_idx = logtRY;
-      threat_sign = (other_team != RED_YELLOW) ? 1 : -1;
-    } else if (logtBG > logtRY) {
-      len_idx = logtBG;
-      threat_sign = (other_team != RED_YELLOW) ? -1 : 1;
-    } else {
-      len_idx = 0;
-      threat_sign = 0;
-    }
-
-    len_idx = (len_idx < 0) ? 0 : (len_idx > 63 ? 63 : len_idx);
-    threat_eval = threat_sign * THREAT_SCORE[len_idx];
-
-    eval += moves_eval + threat_eval;
-
-    eval = maximizing_player ? eval : -eval;
-  } 
+  eval = maximizing_player ? eval : -eval;
+   
   ss->static_eval = eval;
   ss->move_count = 0;
 
@@ -327,9 +281,6 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   const Move* pv_ptr = (result.pv_index >= 0) ? &moves[result.pv_index] : nullptr;
   size_t move_count2 = result.count;
   const Move* tt_ptr = nullptr;
-  if (move_count2 > 0 && tt_move.has_value()) {
-    tt_ptr = &(*tt_move);
-  }
 
   InitMovePicker2(
     &picker,
@@ -412,31 +363,6 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
     ss->move_count = move_count++;
 
     int r = 1;
-
-    if (depth >= 5
-        && tt_hit
-        && (tte->bound() == LOWER_BOUND)
-        && tte->depth() >= depth >> 1
-        ) {
-      num_singular_extension_searches_++;
-      
-      int beta = tte->GetScore();
-
-      PVInfo pvinfo;
-      auto res = Search(ss, NonPV, thread_state, board, ply+1,
-        depth - 1 - (depth/2),
-        beta - 100, beta,
-        maximizing_player, pvinfo, is_cut_node);
-
-      if (res.has_value()) {
-        int score = std::get<0>(*res);
-        // If the search fails low, we didn't find a better move
-        if (score < beta) {
-          num_singular_extensions_++;
-          r = -1;
-        }
-      }
-    }
 
     constexpr int kMaxExtensionsPerPath = 2;
     if (depth < 2 && move.IsCapture() && ss->extension_count < kMaxExtensionsPerPath) {
@@ -611,9 +537,6 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
     bound = EXACT;
   } else {
     bound = UPPER_BOUND;
-  }
-  if (tt != nullptr) {
-    tt->Save(board.HashKey(), depth, best_move, score, ss->static_eval, bound, is_pv_node);
   }
 
   thread_state.ReleaseMoveBufferPartition();
