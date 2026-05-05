@@ -41,6 +41,11 @@ BloomFilter::~BloomFilter() {
   // Note: We don't shm_unlink here - the filter persists for external updater
 }
 
+void BloomFilter::Reset() {
+  size_t bytes = num_bits_ / 8;
+  std::memset(bits_, 0, bytes);
+}
+
 void BloomFilter::Add(int64_t key) {
   // Extract 3 positions from the 64-bit hash
   uint32_t h1 = static_cast<uint32_t>(key);

@@ -106,6 +106,7 @@ class PVBridge:
         self.depth = 100
         self.position = "startpos"
         self.current_pv = []
+        self.oldpv = []
     
     def set_position(self, pos: str) -> None:
         """Set position on both engines."""
@@ -123,15 +124,25 @@ class PVBridge:
     def set_depth(self, depth: int) -> None:
         self.depth = depth
     
+
     def update_checkmate(self, pv: List[str], depth: int) -> None:
         """Update 4pcheckmate to search the PV position."""
+        l = 3
         if pv == self.current_pv:
-            return
+            if pv == self.oldpv:
+                print("> running")
+                return
+            else:
+                print("> same")
+                l = 2
+        else:
+            print("> new")
+        self.oldpv = self.current_pv
         
-        if depth < 10:
-            return
+        #if depth < 10:
+        #    return
         
-        print(f"[Bridge] PV @ depth {depth}: {' '.join(pv)}")
+        #print(f"[Bridge] PV @ depth {depth}: {' '.join(pv)}")
         
         # Send stop, new position, go
         self.checkmate.send("stop")
@@ -143,7 +154,8 @@ class PVBridge:
             else:
                 break
         
-        moves = ' '.join(pv[:common])
+        #moves = ' '.join(pv[:common])
+        moves = ' '.join(pv[:max(1,len(pv)-l)])
         if self.position == "startpos":
             self.checkmate.send(f"position startpos moves {moves}")
         elif self.position.startswith("fen "):

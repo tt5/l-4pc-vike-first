@@ -45,6 +45,11 @@ CheckmateTable::~CheckmateTable() {
   // Note: We don't shm_unlink here - the table persists for external updater
 }
 
+void CheckmateTable::Reset() {
+  size_t bytes = size_ * sizeof(CheckmateEntry);
+  std::memset(table_, 0, bytes);
+}
+
 void CheckmateTable::Insert(int64_t key) {
   size_t idx = key & mask_;
 

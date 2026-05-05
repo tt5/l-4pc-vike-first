@@ -33,6 +33,7 @@ class BloomFilter {
   }
 
   void Add(int64_t key);
+  void Reset();
 
   size_t Size() const { return num_bits_; }
 

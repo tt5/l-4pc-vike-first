@@ -36,8 +36,12 @@ namespace {
     const chess::PVInfo* current = &pv_info;
     while (current && current->GetBestMove().has_value()) {
       const chess::Move& move = *current->GetBestMove();
-      pv_str += std::to_string(move.FromRow()) + "," + std::to_string(move.FromCol()) + "->";
-      pv_str += std::to_string(move.ToRow()) + "," + std::to_string(move.ToCol()) + " ";
+      pv_str += static_cast<char>('a' + move.FromCol());
+      pv_str += std::to_string(14 - move.FromRow());
+      pv_str += "-";
+      pv_str += static_cast<char>('a' + move.ToCol());
+      pv_str += std::to_string(14 - move.ToRow());
+      pv_str += " ";
       current = current->GetChild().get();
     }
     return pv_str;
@@ -144,14 +148,19 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
   num_nodes_++;
 
-  if (num_nodes_ % 1000000 == 0) {
-    std::cout << FormatPVLine(pvinfo) << std::endl;
+  if (num_nodes_ % 7'000'000 == 0) {
+    std::cout << "info depth " << depth
+      << " time 0 nodes " << num_nodes_
+      << " pv "
+      << FormatPVLine(thread_state.GetPVInfo())
+      << " score 0 nps 0"
+      << std::endl;
   }
 
-  //if (num_nodes_ % 400000 == 0) {
-  //  std::cout << "nodes: " << num_nodes_ 
-  //            << " checkmate_skips: " << g_checkmate_skips.load() << std::endl;
-  //}
+  if (num_nodes_ % 1'000'000 == 0) {
+    std::cout << " checkmate_skips: " << g_checkmate_skips.load()
+              << std::endl;
+  }
 
   if (canceled_) {
     return std::nullopt;
@@ -175,7 +184,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   if (tte != nullptr) {
     if (tte->key == key) { // valid entry
       tt_hit = true;
-      if (tte->depth() >= (depth << 2)) {
+      if (tte->depth() >= (depth)) {
         // at non-PV nodes check for an early TT cutoff
         if (!is_root_node
             && !is_pv_node
@@ -214,9 +223,9 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
     Move move(capture_info.from_row, capture_info.from_col,
               capture_info.to_row, capture_info.to_col, capture_raw);
 
-    if (tt != nullptr) {
-      tt->Save(key, 100, move, eval, eval, EXACT, false /*is_pv_node*/);
-    }
+    //if (tt != nullptr) {
+    //  tt->Save(key, 100, move, eval, eval, EXACT, false /*is_pv_node*/);
+    //}
     //thread_state.ReleaseMoveBufferPartition();
     return std::make_tuple(eval, move);
   }
@@ -468,9 +477,9 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
       (ss+1)->extension_count = ss->extension_count + (r < 0 ? 1 : 0);
       int new_depth = depth - 1
           - (depth/2)*(r > 0)*(depth>3)
-          - (depth/4)*(r > 0)*(depth>7)
-          - (depth/8)*(r > 0)*(depth>15)
-          - (depth/16)*(r > 0)*(depth>31)
+          //- (depth/4)*(r > 0)*(depth>7)
+          //- (depth/8)*(r > 0)*(depth>15)
+          //- (depth/16)*(r > 0)*(depth>31)
           + (r < 0);
       SEARCH_OR_EVAL(value_and_move_or, new_depth,
           ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -488,9 +497,9 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
             (ss+1)->extension_count = ss->extension_count;
             int new_depth = depth - 1
                 - (depth/2)*(r > 0)*(depth>3)
-                - (depth/4)*(r > 0)*(depth>7)
-                - (depth/8)*(r > 0)*(depth>15)
-                - (depth/16)*(r > 0)*(depth>31)
+                //- (depth/4)*(r > 0)*(depth>7)
+                //- (depth/8)*(r > 0)*(depth>15)
+                //- (depth/16)*(r > 0)*(depth>31)
                 + (r < 0);
             SEARCH_OR_EVAL(value_and_move_or, new_depth,
                 ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -502,7 +511,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
               (ss+1)->extension_count = ss->extension_count;
               int new_depth = depth - 1
                 - (depth/3)*(r > 0)*(depth>2)
-                - (depth/6)*(r > 0)*(depth>6)
+                //- (depth/6)*(r > 0)*(depth>6)
                 + (r < 0);
               SEARCH_OR_EVAL(value_and_move_or, new_depth,
                 ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -514,7 +523,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
             (ss+1)->extension_count = ss->extension_count;
             int new_depth = depth - 1
               - (depth/3)*(r > 0)*(depth>2)
-              - (depth/6)*(r > 0)*(depth>6)
+              //- (depth/6)*(r > 0)*(depth>6)
               + (r < 0);
             SEARCH_OR_EVAL(value_and_move_or, new_depth,
               ss+1, NonPV, thread_state, board, ply + 1, new_depth,

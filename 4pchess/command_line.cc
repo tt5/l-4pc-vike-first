@@ -64,6 +64,8 @@ CommandLine::CommandLine() {
 void CommandLine::Run() {
   // Runs on main thread
   player_ = std::make_shared<AlphaBetaPlayer>(player_options_);
+  // otherwise the checkmates persist (in memory)
+  player_->ResetCheckmateTable();
   ResetBoard();
   while (running_) {
     std::string line;
@@ -155,12 +157,13 @@ void CommandLine::StartEvaluation() {
         new_pv_line = pv;
 
         std::cout
-          << "info"
-          << " depth " << depth
-          << " time " << duration_ms.count()
-          << " nodes " << num_evals
-          << " pv " << pv
-          << " score " << score_centipawn;
+          //<< "info"
+          << "---- ---- ---- ---- ---- ---- ---- ---- ----"
+          << " depth " << depth;
+          //<< " time " << duration_ms.count()
+          //<< " nodes " << num_evals
+          //<< " pv " << pv
+          //<< " score " << score_centipawn;
         if (nps.has_value()) {
           std::cout << " nps " << *nps;
         }

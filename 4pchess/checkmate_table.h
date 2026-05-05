@@ -25,6 +25,7 @@ class CheckmateTable {
   }
 
   void Insert(int64_t key);
+  void Reset();
 
   size_t Size() const { return size_; }
 

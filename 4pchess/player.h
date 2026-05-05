@@ -16,7 +16,7 @@
 
 namespace chess {
 
-constexpr int kMateValue = 1000000'00;  // mate value (centipawns)
+constexpr int kMateValue = 4000000'00;  // mate value (centipawns)
 
 class PVInfo {
  public:
@@ -156,6 +156,10 @@ class AlphaBetaPlayer {
   // NOTE: Should wait until evaluation is done before resetting this to true.
   void SetCanceled(bool canceled) { canceled_ = canceled; }
   bool IsCanceled() { return canceled_; }
+  void ResetCheckmateTable() { 
+    if (checkmate_table_) checkmate_table_->Reset();
+    if (bloom_filter_) bloom_filter_->Reset();
+  }
   const PVInfo& GetPVInfo() const { return pv_info_; }
 
   std::optional<std::tuple<int, std::optional<Move>>> Search(
