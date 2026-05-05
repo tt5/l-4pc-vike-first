@@ -184,24 +184,24 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   if (tte != nullptr) {
     if (tte->key == key) { // valid entry
       tt_hit = true;
-      if (tte->depth() >= (depth)) {
-        // at non-PV nodes check for an early TT cutoff
-        if (!is_root_node
-            && !is_pv_node
-            && (tte->bound() == EXACT
-              || (tte->bound() == LOWER_BOUND && tte->GetScore() >= beta)
-              || (tte->bound() == UPPER_BOUND && tte->GetScore() <= alpha))
-            ) {
+      //if (tte->depth() >= (depth)) {
+      //  // at non-PV nodes check for an early TT cutoff
+      //  if (!is_root_node
+      //      && !is_pv_node
+      //      && (tte->bound() == EXACT
+      //        || (tte->bound() == LOWER_BOUND && tte->GetScore() >= beta)
+      //        || (tte->bound() == UPPER_BOUND && tte->GetScore() <= alpha))
+      //      ) {
 
-          if (tte->has_move()) {
-              return std::make_tuple(
-                  std::min(beta, std::max(alpha, tte->GetScore())),
-                  tte->move);
-          }
-          return std::make_tuple(
-            std::min(beta, std::max(alpha, tte->GetScore())), std::nullopt);
-        }
-      }
+      //    if (tte->has_move()) {
+      //        return std::make_tuple(
+      //            std::min(beta, std::max(alpha, tte->GetScore())),
+      //            tte->move);
+      //    }
+      //    return std::make_tuple(
+      //      std::min(beta, std::max(alpha, tte->GetScore())), std::nullopt);
+      //  }
+      //}
       if (tte->has_move()) {
         tt_move = tte->move;
       }
@@ -441,38 +441,38 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
     int r = 1;
 
-    if (depth >= 5
-        && tt_hit
-        && (tte->bound() == LOWER_BOUND)
-        && tte->depth() >= depth >> 1
-        ) {
-      num_singular_extension_searches_++;
-      
-      int beta = tte->GetScore();
+    //if (depth >= 5
+    //    && tt_hit
+    //    && (tte->bound() == LOWER_BOUND)
+    //    && tte->depth() >= depth >> 1
+    //    ) {
+    //  num_singular_extension_searches_++;
+    //  
+    //  int beta = tte->GetScore();
 
-      PVInfo pvinfo;
-      auto res = Search(ss, NonPV, thread_state, board, ply+1,
-        depth - 1 - (depth/2),
-        beta - 100, beta,
-        maximizing_player, pvinfo, is_cut_node);
+    //  PVInfo pvinfo;
+    //  auto res = Search(ss, NonPV, thread_state, board, ply+1,
+    //    depth - 1 - (depth/2),
+    //    beta - 100, beta,
+    //    maximizing_player, pvinfo, is_cut_node);
 
-      if (res.has_value()) {
-        int score = std::get<0>(*res);
-        // If the search fails low, we didn't find a better move
-        if (score < beta) {
-          num_singular_extensions_++;
-          r = -1;
-        }
-      }
-    }
+    //  if (res.has_value()) {
+    //    int score = std::get<0>(*res);
+    //    // If the search fails low, we didn't find a better move
+    //    if (score < beta) {
+    //      num_singular_extensions_++;
+    //      r = -1;
+    //    }
+    //  }
+    //}
 
-    constexpr int kMaxExtensionsPerPath = 1;
+    constexpr int kMaxExtensionsPerPath = 2;
     if (depth < 2 && move.IsCapture() && ss->extension_count < kMaxExtensionsPerPath) {
         r = -1;
     }
 
     // lmr
-    if (move_count >= 1) {
+    if (move_count >= 2) {
       // First search with reduced depth and null window
       (ss+1)->extension_count = ss->extension_count + (r < 0 ? 1 : 0);
       int new_depth = depth - 1
@@ -538,7 +538,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
     // high (in the latter case search only if value < beta), otherwise let the
     // parent node fail low with value <= alpha and try another move.
     bool full_search =
-      move_count == 0
+      move_count < 2
           || (value_and_move_or.has_value()
               && -std::get<0>(*value_and_move_or) > alpha
               && (is_root_node

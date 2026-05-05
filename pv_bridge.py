@@ -134,7 +134,7 @@ class PVBridge:
                 return
             else:
                 print("> same")
-                l = 2
+                l = 1
         else:
             print("> new")
         self.oldpv = self.current_pv
