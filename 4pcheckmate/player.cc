@@ -14,7 +14,6 @@
 #include <atomic>
 #include "board.h"
 #include "player.h"
-#include "transposition_table.h"
 #include "move_picker2.h"
 
 // Macro to avoid function call overhead for leaf nodes (90% of calls)
@@ -38,9 +37,6 @@ AlphaBetaPlayer::AlphaBetaPlayer(std::optional<PlayerOptions> options) {
   if (options.has_value()) {
     options_ = *options;
   }
-  if (options_.transposition_table_size > 0) {
-    transposition_table_ = std::make_unique<TranspositionTable>(options_.transposition_table_size);
-  }
   // Initialize checkmate table with 10 million entries (~80MB)
   checkmate_table_ = std::make_unique<CheckmateTable>(10'000'000);
   // Initialize bloom filter with 4MB
@@ -53,9 +49,9 @@ AlphaBetaPlayer::~AlphaBetaPlayer() {
 
 ThreadState::ThreadState(
     PlayerOptions options, const Board& board, const PVInfo& pv_info,
-    TranspositionTable* transposition_table, int16_t* history_heuristic)
+    int16_t* history_heuristic)
   : options_(options), root_board_(&board), pv_info_(pv_info),
-    transposition_table_(transposition_table), history_heuristic_(history_heuristic) {
+    history_heuristic_(history_heuristic) {
   move_buffer_ = new Move[kBufferPartitionSize * kBufferNumPartitions];
 }
 
@@ -67,7 +63,6 @@ ThreadState::ThreadState(ThreadState&& other) noexcept
   : options_(other.options_),
     root_board_(other.root_board_),
     pv_info_(std::move(other.pv_info_)),
-    transposition_table_(other.transposition_table_),
     history_heuristic_(other.history_heuristic_),
     move_buffer_(other.move_buffer_),
     buffer_id_(other.buffer_id_) {
@@ -84,7 +79,6 @@ ThreadState& ThreadState::operator=(ThreadState&& other) noexcept {
     options_ = other.options_;
     root_board_ = other.root_board_;
     pv_info_ = std::move(other.pv_info_);
-    transposition_table_ = other.transposition_table_;
     history_heuristic_ = other.history_heuristic_;
     move_buffer_ = other.move_buffer_;
     buffer_id_ = other.buffer_id_;
@@ -528,17 +522,6 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
   }
 
-  ScoreBound bound;
-  if (!has_legal_moves) {
-    bound = EXACT;
-  } else if (beta <= alpha) {
-    bound = LOWER_BOUND;
-  } else if (is_pv_node && best_move.has_value()) {
-    bound = EXACT;
-  } else {
-    bound = UPPER_BOUND;
-  }
-
   thread_state.ReleaseMoveBufferPartition();
 
   return std::make_tuple(score, best_move);
@@ -571,7 +554,7 @@ AlphaBetaPlayer::MakeMove(
   PlayerOptions thread_options = options_;
 
   thread_states.emplace_back(thread_options, board, pv_info_,
-                             transposition_table_.get(), history_heuristic_[0][0]);
+                             history_heuristic_[0][0]);
   auto& thread_state = thread_states.back();
   ResetMobilityScores(thread_state, board);
 
@@ -585,12 +568,6 @@ AlphaBetaPlayer::MakeMove(
     asp_sum_ = 0;
     asp_sum_sq_ = 0;
 
-    // Increment generation counter for new search
-    if (hash_key != last_board_key_) {
-      if (transposition_table_) {
-        transposition_table_->NewSearch();
-      }
-    }
   }
   last_board_key_ = hash_key;
 

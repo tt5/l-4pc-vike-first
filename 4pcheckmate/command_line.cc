@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "player.h"
-#include "transposition_table.h"
 #include "board.h"
 #include "utils.h"
 
@@ -243,24 +242,7 @@ void CommandLine::HandleCommand(
     }
     std::string option_name = LowerCase(parts[2]);
     const auto& option_value = parts[4];
-    if (option_name == "hash") {
-      auto val = ParseInt(option_value);
-      if (val.has_value()) {
-        if (*val < 0) {
-          SendInvalidCommandMessage(
-              "Hash MB must be non-negative, given: " + option_value);
-          return;
-        }
-        size_t size = *val * 1000000 / sizeof(HashTableEntry);
-        if (size != player_options_.transposition_table_size) {
-          player_options_.transposition_table_size = size;
-          player_ = std::make_shared<AlphaBetaPlayer>(player_options_);
-        }
-      } else {
-        SendInvalidCommandMessage("Can not parse int: " + option_value);
-        return;
-      }
-    } else if (option_name == "uci_showcurrline") {
+    if (option_name == "uci_showcurrline") {
       if (option_value == "true") {
         show_current_line_ = true;
       } else if (option_value == "false") {
