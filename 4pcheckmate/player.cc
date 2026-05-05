@@ -369,7 +369,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
       (ss+1)->extension_count = ss->extension_count + (r < 0 ? 1 : 0);
       int new_depth = depth - 1
           - (depth/2)*(r > 0)*(depth>3)
-          - (depth/4)*(r > 0)*(depth>7)
+          //- (depth/4)*(r > 0)*(depth>7)
           //- (depth/8)*(r > 0)*(depth>15)
           //- (depth/16)*(r > 0)*(depth>31)
           + (r < 0);
@@ -389,7 +389,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
             (ss+1)->extension_count = ss->extension_count;
             int new_depth = depth - 1
                 - (depth/2)*(r > 0)*(depth>3)
-                - (depth/4)*(r > 0)*(depth>7)
+                //- (depth/4)*(r > 0)*(depth>7)
                 //- (depth/8)*(r > 0)*(depth>15)
                 //- (depth/16)*(r > 0)*(depth>31)
                 + (r < 0);
@@ -403,7 +403,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
               (ss+1)->extension_count = ss->extension_count;
               int new_depth = depth - 1
                 - (depth/3)*(r > 0)*(depth>2)
-                - (depth/6)*(r > 0)*(depth>6)
+                //- (depth/6)*(r > 0)*(depth>6)
                 + (r < 0);
               SEARCH_OR_EVAL(value_and_move_or, new_depth,
                 ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -415,7 +415,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
             (ss+1)->extension_count = ss->extension_count;
             int new_depth = depth - 1
               - (depth/3)*(r > 0)*(depth>2)
-              - (depth/6)*(r > 0)*(depth>6)
+              //- (depth/6)*(r > 0)*(depth>6)
               + (r < 0);
             SEARCH_OR_EVAL(value_and_move_or, new_depth,
               ss+1, NonPV, thread_state, board, ply + 1, new_depth,

@@ -157,7 +157,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   if (tte != nullptr) {
     if (tte->key == key) { // valid entry
       tt_hit = true;
-      if (tte->depth() >= depth) {
+      if (tte->depth() >= (depth << 2)) {
         // at non-PV nodes check for an early TT cutoff
         if (!is_root_node
             && !is_pv_node
@@ -439,7 +439,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
       }
     }
 
-    constexpr int kMaxExtensionsPerPath = 2;
+    constexpr int kMaxExtensionsPerPath = 1;
     if (depth < 2 && move.IsCapture() && ss->extension_count < kMaxExtensionsPerPath) {
         r = -1;
     }
@@ -452,7 +452,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
           - (depth/2)*(r > 0)*(depth>3)
           - (depth/4)*(r > 0)*(depth>7)
           - (depth/8)*(r > 0)*(depth>15)
-          //- (depth/16)*(r > 0)*(depth>31)
+          - (depth/16)*(r > 0)*(depth>31)
           + (r < 0);
       SEARCH_OR_EVAL(value_and_move_or, new_depth,
           ss+1, NonPV, thread_state, board, ply + 1, new_depth,
@@ -472,7 +472,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
                 - (depth/2)*(r > 0)*(depth>3)
                 - (depth/4)*(r > 0)*(depth>7)
                 - (depth/8)*(r > 0)*(depth>15)
-                //- (depth/16)*(r > 0)*(depth>31)
+                - (depth/16)*(r > 0)*(depth>31)
                 + (r < 0);
             SEARCH_OR_EVAL(value_and_move_or, new_depth,
                 ss+1, NonPV, thread_state, board, ply + 1, new_depth,

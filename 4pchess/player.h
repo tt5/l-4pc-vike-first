@@ -36,6 +36,7 @@ class PVInfo {
 };
 
 constexpr size_t kTranspositionTableSize = 256'000;
+//constexpr size_t kTranspositionTableSize = 512'000'000;
 constexpr int kMaxPly = 200;
 constexpr int kKillersPerPly = 3;
 
