@@ -30,6 +30,18 @@
 
 namespace {
   std::atomic<int64_t> g_checkmate_skips{0};
+
+  std::string FormatPVLine(const chess::PVInfo& pv_info) {
+    std::string pv_str;
+    const chess::PVInfo* current = &pv_info;
+    while (current && current->GetBestMove().has_value()) {
+      const chess::Move& move = *current->GetBestMove();
+      pv_str += std::to_string(move.FromRow()) + "," + std::to_string(move.FromCol()) + "->";
+      pv_str += std::to_string(move.ToRow()) + "," + std::to_string(move.ToCol()) + " ";
+      current = current->GetChild().get();
+    }
+    return pv_str;
+  }
 }
 
 namespace chess {
@@ -131,10 +143,16 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
 
   num_nodes_++;
-  if (num_nodes_ % 400000 == 0) {
-    std::cout << "nodes: " << num_nodes_ 
-              << " checkmate_skips: " << g_checkmate_skips.load() << std::endl;
+
+  if (num_nodes_ % 1000000 == 0) {
+    std::cout << FormatPVLine(pvinfo) << std::endl;
   }
+
+  //if (num_nodes_ % 400000 == 0) {
+  //  std::cout << "nodes: " << num_nodes_ 
+  //            << " checkmate_skips: " << g_checkmate_skips.load() << std::endl;
+  //}
+
   if (canceled_) {
     return std::nullopt;
   }
