@@ -12,6 +12,7 @@
 #include "board.h"
 #include "bloom_filter.h"
 #include "checkmate_table.h"
+#include "transposition_table.h"
 
 namespace chess {
 
@@ -166,6 +167,7 @@ class AlphaBetaPlayer {
 
   int64_t GetNumEvaluations() { return num_nodes_; }
   int64_t GetNumCacheHits() { return num_cache_hits_; }
+  int64_t GetNumTTHits() { return num_tt_hits_; }
   int64_t GetNumFutilityMovesPruned() { return num_futility_moves_pruned_; }
   int64_t GetNumLmrSearches() { return num_lmr_searches_; }
   int64_t GetNumLmrResearches() { return num_lmr_researches_; }
@@ -191,6 +193,7 @@ class AlphaBetaPlayer {
 
   std::unique_ptr<CheckmateTable> checkmate_table_;
   std::unique_ptr<BloomFilter> bloom_filter_;
+  std::unique_ptr<TranspositionTable> transposition_table_;
   int16_t history_heuristic_[2][224][224] = {0};
 
   void ResetMobilityScores(ThreadState& thread_state, Board& board);
@@ -198,6 +201,7 @@ class AlphaBetaPlayer {
 
   int64_t num_nodes_ = 0; // debugging
   int64_t num_cache_hits_ = 0;
+  int64_t num_tt_hits_ = 0;
   int64_t num_futility_moves_pruned_ = 0;
   int64_t num_lmr_searches_ = 0;
   int64_t num_lmr_researches_ = 0;

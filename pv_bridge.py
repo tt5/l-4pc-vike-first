@@ -127,14 +127,14 @@ class PVBridge:
 
     def update_checkmate(self, pv: List[str], depth: int) -> None:
         """Update 4pcheckmate to search the PV position."""
-        l = 3
+        l = 1
         if pv == self.current_pv:
             if pv == self.oldpv:
                 print("> running")
                 return
             else:
                 print("> same")
-                l = 1
+                l = 0
         else:
             print("> new")
         self.oldpv = self.current_pv
@@ -154,8 +154,8 @@ class PVBridge:
             else:
                 break
         
-        #moves = ' '.join(pv[:common])
-        moves = ' '.join(pv[:max(1,len(pv)-l)])
+        moves = ' '.join(pv[:common+l])
+        #moves = ' '.join(pv[:max(1,len(pv)-l)])
         if self.position == "startpos":
             self.checkmate.send(f"position startpos moves {moves}")
         elif self.position.startswith("fen "):
