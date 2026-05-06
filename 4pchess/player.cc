@@ -149,7 +149,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   num_nodes_++;
 
   if (num_nodes_ % 7'000'000 == 0) {
-    std::cout << "info depth " << depth
+    std::cout << "info depth " << ply
       << " time 0 nodes " << num_nodes_
       << " pv "
       << FormatPVLine(thread_state.GetPVInfo())
@@ -707,7 +707,8 @@ AlphaBetaPlayer::MakeMoveSingleThread(
   Board board = thread_state.GetRootBoard();
   PVInfo& pv_info = thread_state.GetPVInfo();
 
-  int next_depth = std::min(1 + pv_info.GetDepth(), max_depth);
+  //int next_depth = std::min(1 + pv_info.GetDepth(), max_depth);
+  int next_depth = max_depth - 1;
   std::optional<std::tuple<int, std::optional<Move>>> res;
   int alpha = -kMateValue;
   int beta = kMateValue;
