@@ -148,7 +148,16 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
   num_nodes_++;
 
-  if (num_nodes_ % 7'000'000 == 0) {
+  if (num_nodes_ < 7'000'000) {
+    if (num_nodes_ == 10'000) {
+      std::cout << "info depth " << ply
+        << " time 0 nodes " << num_nodes_
+        << " pv "
+        << FormatPVLine(thread_state.GetPVInfo())
+        << " score 0 nps 0"
+        << std::endl;
+    }
+  } else if (num_nodes_ % 7'000'000 == 0) {
     std::cout << "info depth " << ply
       << " time 0 nodes " << num_nodes_
       << " pv "
@@ -157,10 +166,10 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
       << std::endl;
   }
 
-  if (num_nodes_ % 1'000'000 == 0) {
-    std::cout << " checkmate_skips: " << g_checkmate_skips.load()
-              << std::endl;
-  }
+  //if (num_nodes_ % 1'000'000 == 0) {
+  //  std::cout << " checkmate_skips: " << g_checkmate_skips.load()
+  //            << std::endl;
+  //}
 
   if (canceled_) {
     return std::nullopt;

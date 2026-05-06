@@ -158,7 +158,7 @@ void CommandLine::StartEvaluation() {
 
         std::cout
           //<< "info"
-          << "---- ---- ---- ---- ---- ---- ---- ---- ----"
+          << "----"
           << " depth " << depth;
           //<< " time " << duration_ms.count()
           //<< " nodes " << num_evals
@@ -172,8 +172,8 @@ void CommandLine::StartEvaluation() {
         best_move = std::get<1>(*res);
 
         if (std::abs(score_centipawn) == kMateValue) {
-          std::cout << "checkmate score" << std::endl;
-          abort();
+          //std::cout << "checkmate score" << std::endl;
+          //abort();
         }
 
       } else {
@@ -194,13 +194,13 @@ void CommandLine::StartEvaluation() {
         }
       }
       */
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      //std::this_thread::sleep_for(std::chrono::milliseconds(200));
       depth++;
 
     }
 
     if (best_move.has_value()) {
-      std::cout << "bestmove " << best_move->PrettyStr() << std::endl;
+      //std::cout << "bestmove " << best_move->PrettyStr() << std::endl;
       best_move = std::nullopt;
     }
 
