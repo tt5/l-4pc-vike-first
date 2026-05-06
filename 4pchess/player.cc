@@ -150,7 +150,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
 
   if (num_nodes_ < 7'000'000) {
     if (num_nodes_ == 10'000) {
-      std::cout << "info depth " << ply
+      std::cout << "info depth " << "0"
         << " time 0 nodes " << num_nodes_
         << " pv "
         << FormatPVLine(thread_state.GetPVInfo())
@@ -158,7 +158,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
         << std::endl;
     }
   } else if (num_nodes_ % 7'000'000 == 0) {
-    std::cout << "info depth " << ply
+    std::cout << "info depth " << "0"
       << " time 0 nodes " << num_nodes_
       << " pv "
       << FormatPVLine(thread_state.GetPVInfo())
