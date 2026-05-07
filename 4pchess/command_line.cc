@@ -158,8 +158,8 @@ void CommandLine::StartEvaluation() {
 
         std::cout
           //<< "info"
-          << "----"
-          << " depth " << depth;
+          //<< "----"
+          << "depth " << depth;
           //<< " time " << duration_ms.count()
           //<< " nodes " << num_evals
           //<< " pv " << pv
