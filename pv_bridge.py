@@ -152,9 +152,24 @@ class PVBridge:
             print("[User] -> stop")
             self.chess.send("stop")
             self.checkmate.send("stop")
+        elif cmd.startswith("move "):
+            # Parse move command: move e2-e4
+            move_parts = cmd.split()
+            if len(move_parts) == 2:
+                move = move_parts[1]
+                if "-" in move:
+                    print(f"[User] -> move {move}")
+                    # Send the move command directly to 4pchess
+                    self.chess.send(f"move {move}")
+                else:
+                    print(f"[User] Invalid move format: {move}")
+                    print("[User] Use format: move e2-e4")
+            else:
+                print("[User] Invalid move command")
+                print("[User] Use format: move e2-e4")
         else:
             print(f"[User] Unknown command: {cmd}")
-            print("[User] Available commands: go, stop")
+            print("[User] Available commands: go, stop, move <from>-<to>")
     
 
     def update_checkmate(self, pv: List[str]) -> None:
@@ -268,7 +283,7 @@ def main():
     
     print(f"[Bridge] Starting: position={args.position}, depth={args.depth}")
     print("[Bridge] Ctrl+C to stop")
-    print("[Bridge] Stdin commands available: go, stop")
+    print("[Bridge] Stdin commands available: go, stop, move <from>-<to>")
     print("[Bridge] Waiting for 'go' command to start analysis...")
     
     bridge.run()
