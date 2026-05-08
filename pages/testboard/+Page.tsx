@@ -71,16 +71,20 @@ export default function Page() {
 
       case 'info':
         const info = message.data as {
-          depth?: number;
           score?: number;
           pv?: string[];
-          nps?: number;
-          time?: number;
         };
-        if (info.depth !== undefined) setDepth(info.depth);
         if (info.score !== undefined) setEvalScore(info.score);
         if (info.pv !== undefined) setPvLine(info.pv);
-        if (info.nps !== undefined) setNps(info.nps);
+        break;
+
+      case 'depth':
+        const depthInfo = message.data as {
+          depth?: number;
+          nps?: number;
+        };
+        if (depthInfo.depth !== undefined) setDepth(depthInfo.depth);
+        if (depthInfo.nps !== undefined) setNps(depthInfo.nps);
         break;
 
       case 'bestmove':

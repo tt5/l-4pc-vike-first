@@ -23,8 +23,8 @@ function parseEngineOutput(line: string): { type: string; data: unknown } | null
   line = line.trim();
   
   if (line.startsWith("info ")) {
-    // Parse: info depth 12 time 245 nodes 45000 pv e2-e4 e7-e5 score 45 nps 183673
-    const info: Record<string, string | number | string[]> = {};
+    // Parse new format: info pv e1-d3 b10-d10 e14-f12 m8-l8 d3-b4 a9-e13 f12-e10
+    const info: Record<string, number | string | string[]> = {};
     const parts = line.substring(5).split(" ");
     
     for (let i = 0; i < parts.length; i++) {
@@ -35,7 +35,7 @@ function parseEngineOutput(line: string): { type: string; data: unknown } | null
         break;
       } else if (i + 1 < parts.length) {
         const val = parts[i + 1];
-        if (key === "depth" || key === "time" || key === "nodes" || key === "score" || key === "nps") {
+        if (key === "score") {
           info[key] = parseInt(val, 10);
         }
         i++;
@@ -43,6 +43,24 @@ function parseEngineOutput(line: string): { type: string; data: unknown } | null
     }
     
     return { type: "info", data: info };
+  }
+  
+  if (line.startsWith("depth ")) {
+    // Parse new format: depth 7 nps 192642
+    const parts = line.split(" ");
+    const info: Record<string, number> = {};
+    
+    for (let i = 0; i < parts.length; i += 2) {
+      if (i + 1 < parts.length) {
+        const key = parts[i];
+        const val = parts[i + 1];
+        if (key === "depth" || key === "nps") {
+          info[key] = parseInt(val, 10);
+        }
+      }
+    }
+    
+    return { type: "depth", data: info };
   }
   
   if (line.startsWith("bestmove ")) {
