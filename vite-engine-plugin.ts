@@ -7,6 +7,17 @@ export function engineWebSocketPlugin(): Plugin {
     async configureServer(server) {
       const { WebSocket } = await import('ws');
       const { handleEngineConnection } = await import('./server/engine-handlers');
+      const NATSManager = await import('./server/nats-manager');
+
+      // Initialize NATS connection
+      try {
+        const natsManager = NATSManager.getInstance();
+        await natsManager.connect();
+        console.log('[Engine] NATS connection initialized');
+      } catch (error) {
+        console.error('[Engine] Failed to initialize NATS:', error);
+        return;
+      }
 
       const httpServer = server.httpServer;
       if (!httpServer) return;
