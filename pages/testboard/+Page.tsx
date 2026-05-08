@@ -26,8 +26,6 @@ export default function Page() {
     ws.onopen = () => {
       console.log('[Engine WS] Connected');
       setIsConnected(true);
-      // Initialize engine with starting position
-      sendCommand({ type: 'init', fen: startingFen });
     };
 
     ws.onmessage = (event) => {

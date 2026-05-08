@@ -134,18 +134,6 @@ export function handleEngineConnection(ws: WebSocket) {
       const data = JSON.parse(message.toString());
       
       switch (data.type) {
-        case "init":
-          // Set up initial position with FEN
-          if (data.fen) {
-            // Initialize board with FEN - using the 'fen' command to display it, 
-            // then we need to set position. The CLI doesn't have a direct 'position' command,
-            // but we can use 'd' to verify and the engine maintains internal state.
-            // Actually, looking at the CLI code, we need to handle this differently.
-            // The board_ is internal, so we send moves from startpos.
-            // For custom FEN, we might need to modify the approach.
-            sendCommand(client, `d`); // Show current board
-          }
-          break;
           
         case "move":
           if (data.move) {
