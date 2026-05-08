@@ -11,7 +11,7 @@ export function engineWebSocketPlugin(): Plugin {
 
       // Initialize NATS connection
       try {
-        const natsManager = NATSManager.getInstance();
+        const natsManager = NATSManager.default.getInstance();
         await natsManager.connect();
         console.log('[Engine] NATS connection initialized');
       } catch (error) {

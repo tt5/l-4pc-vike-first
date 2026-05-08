@@ -1,4 +1,4 @@
-import { connect, Connection, NatsError } from 'nats';
+import { connect, NatsError, NatsConnection } from 'nats';
 
 interface EngineCommand {
   clientId: string;
@@ -19,7 +19,7 @@ interface EngineResponse {
 
 class NATSManager {
   private static instance: NATSManager;
-  private nc: Connection | null = null;
+  private nc: NatsConnection | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 2000; // 2 seconds
