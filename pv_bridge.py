@@ -122,6 +122,7 @@ class PVBridge:
         self.position = "startpos"
         self.current_pv = []
         self.oldpv = []
+        self.made_moves = []  # Track moves made by user
         self.stdin_queue = queue.Queue()
         threading.Thread(target=stdin_reader_thread, args=(self.stdin_queue,), daemon=True).start()
     
@@ -161,6 +162,8 @@ class PVBridge:
                     print(f"[User] -> move {move}")
                     # Send the move command directly to 4pchess
                     self.chess.send(f"move {move}")
+                    # Track the made move
+                    self.made_moves.append(move)
                 else:
                     print(f"[User] Invalid move format: {move}")
                     print("[User] Use format: move e2-e4")
@@ -198,12 +201,18 @@ class PVBridge:
         
         moves = ' '.join(pv[:common+l])
         #moves = ' '.join(pv[:max(1,len(pv)-l)])
+        
+        # Prepend made moves to the moves sent to 4pcheckmate
+        pv_moves = pv[:common+l] if moves else []
+        all_moves = self.made_moves + pv_moves
+        all_moves_str = ' '.join(all_moves)
+        
         if self.position == "startpos":
-            self.checkmate.send(f"position startpos moves {moves}")
+            self.checkmate.send(f"position startpos moves {all_moves_str}")
         elif self.position.startswith("fen "):
-            self.checkmate.send(f"position {self.position} moves {moves}")
+            self.checkmate.send(f"position {self.position} moves {all_moves_str}")
         else:
-            self.checkmate.send(f"position fen {self.position} moves {moves}")
+            self.checkmate.send(f"position fen {self.position} moves {all_moves_str}")
         
         self.checkmate.send("go")
         self.current_pv = pv
