@@ -14,7 +14,7 @@ interface EngineClient {
 }
 
 const clients = new Map<WebSocket, EngineClient>();
-
+const natsManager = NATSManager.getInstance();
 
 // Handle WebSocket connection
 export async function handleEngineConnection(ws: WebSocket) {
