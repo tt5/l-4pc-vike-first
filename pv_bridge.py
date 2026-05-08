@@ -151,6 +151,7 @@ class PVBridge:
         elif cmd == "stop":
             print("[User] -> stop")
             self.chess.send("stop")
+            self.checkmate.send("stop")
         else:
             print(f"[User] Unknown command: {cmd}")
             print("[User] Available commands: go, stop")
