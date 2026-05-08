@@ -152,3 +152,4 @@ dist
 cdk.out
 
 sqlite.db
+nats-server

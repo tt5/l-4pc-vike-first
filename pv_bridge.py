@@ -170,9 +170,43 @@ class PVBridge:
             else:
                 print("[User] Invalid move command")
                 print("[User] Use format: move e2-e4")
+        elif cmd == "undo":
+            if self.made_moves:
+                # Remove the last move
+                last_move = self.made_moves.pop()
+                print(f"[User] -> undo {last_move}")
+                
+                # Send undo directly to 4pchess
+                self.chess.send("undo")
+                
+                # Update 4pcheckmate position with remaining moves
+                if self.position == "startpos":
+                    if self.made_moves:
+                        moves_str = ' '.join(self.made_moves)
+                        self.checkmate.send(f"position startpos moves {moves_str}")
+                    else:
+                        self.checkmate.send("position startpos")
+                elif self.position.startswith("fen "):
+                    if self.made_moves:
+                        moves_str = ' '.join(self.made_moves)
+                        self.checkmate.send(f"position {self.position} moves {moves_str}")
+                    else:
+                        self.checkmate.send(f"position {self.position}")
+                else:
+                    if self.made_moves:
+                        moves_str = ' '.join(self.made_moves)
+                        self.checkmate.send(f"position fen {self.position} moves {moves_str}")
+                    else:
+                        self.checkmate.send(f"position fen {self.position}")
+                
+                # Clear current PV since position changed
+                self.current_pv = []
+                self.oldpv = []
+            else:
+                print("[User] No moves to undo")
         else:
             print(f"[User] Unknown command: {cmd}")
-            print("[User] Available commands: go, stop, move <from>-<to>")
+            print("[User] Available commands: go, stop, move <from>-<to>, undo")
     
 
     def update_checkmate(self, pv: List[str]) -> None:
@@ -282,7 +316,7 @@ def main():
     
     print("[Bridge] Starting: position=startpos, depth=100")
     print("[Bridge] Ctrl+C to stop")
-    print("[Bridge] Stdin commands available: go, stop, move <from>-<to>")
+    print("[Bridge] Stdin commands available: go, stop, move <from>-<to>, undo")
     print("[Bridge] Waiting for 'go' command to start analysis...")
     
     bridge.run()
