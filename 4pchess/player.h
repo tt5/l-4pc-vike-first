@@ -193,6 +193,8 @@ class AlphaBetaPlayer {
   int64_t GetNumCheckExtensions() { return num_check_extensions_; }
   int64_t GetNumLazyEval() { return num_lazy_eval_; }
 
+  void ResetStats();
+
  private:
 
   std::optional<std::tuple<int, std::optional<Move>, int>>

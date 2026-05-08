@@ -646,6 +646,20 @@ void AlphaBetaPlayer::ResetMobilityScores(ThreadState& thread_state, Board& boar
   }
 }
 
+void AlphaBetaPlayer::ResetStats() {
+  num_nodes_ = 0;
+  num_cache_hits_ = 0;
+  num_futility_moves_pruned_ = 0;
+  num_lmr_searches_ = 0;
+  num_lmr_researches_ = 0;
+  num_singular_extension_searches_ = 0;
+  num_singular_extensions_ = 0;
+  num_lm_pruned_ = 0;
+  num_fail_high_reductions_ = 0;
+  num_check_extensions_ = 0;
+  num_lazy_eval_ = 0;
+}
+
 std::optional<std::tuple<int, std::optional<Move>, int>>
 AlphaBetaPlayer::MakeMove(
     Board& board,

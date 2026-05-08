@@ -90,6 +90,7 @@ void CommandLine::StopEvaluation() {
     thread_.reset();
     if (player_ != nullptr) {
       player_->SetCanceled(false);
+      player_->ResetStats();
     }
   }
 }
