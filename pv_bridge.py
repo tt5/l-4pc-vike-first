@@ -196,10 +196,6 @@ class PVBridge:
         """Main loop: process 4pchess output, mirror to 4pcheckmate."""
         self.running = True
         
-        # Start 4pchess search
-        sleep(10)
-        self.chess.send(f"go depth {self.depth}")
-        
         while self.running:
             # Process stdin commands
             while True:
@@ -230,6 +226,9 @@ class PVBridge:
             # Show 4pcheckmate errors
             for line in self.checkmate.get_errors():
                 print(f"[4pcheckmate ERR] {line}")
+            
+            # Sleep to reduce CPU usage when idle
+            sleep(0.1)
     
     def stop(self) -> None:
         """Stop both engines."""
@@ -269,6 +268,7 @@ def main():
     print(f"[Bridge] Starting: position={args.position}, depth={args.depth}")
     print("[Bridge] Ctrl+C to stop")
     print("[Bridge] Stdin commands available: go, stop")
+    print("[Bridge] Waiting for 'go' command to start analysis...")
     
     bridge.run()
     bridge.stop()
