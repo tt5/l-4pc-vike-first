@@ -314,7 +314,7 @@ class PVBridge:
         self.running = True
         
         while self.running:
-            # Process 4pchess output
+            # Process 4pchess output and broadcast to all clients
             for line in self.chess.get_lines():
                 print(f"[4pchess ->] {line}")
                 
@@ -324,16 +324,17 @@ class PVBridge:
                     pv_moves = m.group(1).strip().split()
                     # Update checkmate for all clients (could be optimized per-client)
                     await self.update_checkmate(pv_moves)
+                
+                # Broadcast 4pchess output to all connected clients
+                await self.broadcast_engine_output(line)
             
             # Show 4pchess errors
             for line in self.chess.get_errors():
                 print(f"[4pchess ERR] {line}")
             
-            # Show 4pcheckmate output and broadcast to all clients
+            # Show 4pcheckmate output (but don't broadcast to clients)
             for line in self.checkmate.get_lines():
                 print(f"[4pcheckmate ->] {line}")
-                # Broadcast to all connected clients
-                await self.broadcast_engine_output(line)
             
             # Show 4pcheckmate errors
             for line in self.checkmate.get_errors():
