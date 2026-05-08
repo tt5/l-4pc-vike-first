@@ -160,6 +160,7 @@ export default function Page() {
             onMove={handleBoardMove}
             onUndoMove={handleBoardUndo}
             pvLine={pvLine()}
+            isAnalyzing={isAnalyzing()}
           />
         </div>
         <div class={styles.analysisContainer}>

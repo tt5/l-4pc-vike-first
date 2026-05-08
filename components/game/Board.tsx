@@ -23,6 +23,7 @@ interface BoardProps {
   onMove?: (moveNotation: string) => void;
   onUndoMove?: () => void;
   pvLine?: string[];
+  isAnalyzing?: boolean;
 }
 
 
@@ -62,6 +63,11 @@ const Board: Component<BoardProps> = (props) => {
 
   // Parse first move from PV line and convert to coordinates using createMemo for better reactivity
   const pvHighlight = createMemo<{from: Point | null, to: Point | null}>(() => {
+    // Only highlight PV moves when analysis is active
+    if (!props.isAnalyzing) {
+      return {from: null, to: null};
+    }
+
     const pvData = props.pvLine || [];
     if (pvData.length === 0) {
       return {from: null, to: null};
