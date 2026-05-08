@@ -1,4 +1,4 @@
-import { type Component } from 'solid-js';
+import { type Component, createMemo } from 'solid-js';
 import styles from './GridCell.module.css';
 import { createPoint, type Point } from '../../types/board';
 import { King, Queen, Pawn, Bishop, Knight, Rook } from './ChessPieces';
@@ -23,7 +23,7 @@ interface GridCellProps {
   onClick?: () => void;
   onPiecePickup: (point: Point) => void;
   onPieceDrop?: (point: Point) => void;
-  pvHighlight?: {from: Point | null, to: Point | null};
+  pvHighlight?: () => {from: Point | null, to: Point | null};
 }
 
 export const GridCell: Component<GridCellProps> = (props) => {
@@ -35,13 +35,15 @@ export const GridCell: Component<GridCellProps> = (props) => {
   const { isPiece, isHovered, id, color, pieceType } = state;
 
   // Check if this cell is part of the PV highlight
-  const isPvFrom = () => {
-    return pvHighlight?.from && pvHighlight.from[0] === x && pvHighlight.from[1] === y;
-  };
+  const isPvFrom = createMemo(() => {
+    const highlight = pvHighlight?.();
+    return highlight?.from && highlight.from[0] === x && highlight.from[1] === y;
+  });
 
-  const isPvTo = () => {
-    return pvHighlight?.to && pvHighlight.to[0] === x && pvHighlight.to[1] === y;
-  };
+  const isPvTo = createMemo(() => {
+    const highlight = pvHighlight?.();
+    return highlight?.to && highlight.to[0] === x && highlight.to[1] === y;
+  });
   
   const handleMouseDown = (e: MouseEvent) => {
     if (isPiece) {

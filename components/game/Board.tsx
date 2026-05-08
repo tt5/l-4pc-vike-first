@@ -2,6 +2,7 @@ import {
   type Component, 
   createSignal,
   createEffect,
+  createMemo,
   batch,
   onMount,
   onCleanup,
@@ -42,9 +43,6 @@ const Board: Component<BoardProps> = (props) => {
     'GREEN': null
   });
 
-  // Parse first move from PV line and convert to coordinates
-  const [pvHighlight, setPvHighlight] = createSignal<{from: Point | null, to: Point | null}>({from: null, to: null});
-
   // Convert engine notation to board coordinates (inverse of toEngineNotation)
   const fromEngineNotation = (notation: string): Point | null => {
     const files = 'abcdefghijklmn';
@@ -62,25 +60,24 @@ const Board: Component<BoardProps> = (props) => {
     return createPoint(x, y);
   };
 
-  // Parse first move from PV line and update highlights
-createEffect(on(() => props.pvLine, (pvLine) => {
-  const pvData = pvLine || [];
-  if (pvData.length === 0) {
-    setPvHighlight({from: null, to: null});
-    return;
-  }
+  // Parse first move from PV line and convert to coordinates using createMemo for better reactivity
+  const pvHighlight = createMemo<{from: Point | null, to: Point | null}>(() => {
+    const pvData = props.pvLine || [];
+    if (pvData.length === 0) {
+      return {from: null, to: null};
+    }
 
-  const firstMove = pvData[0];
-  const match = firstMove.match(/^([a-n]\d{1,2})-([a-n]\d{1,2})$/);
-  
-  if (match) {
-    const from = fromEngineNotation(match[1]);
-    const to = fromEngineNotation(match[2]);
-    setPvHighlight({from, to});
-  } else {
-    setPvHighlight({from: null, to: null});
-  }
-}, { defer: false }));
+    const firstMove = pvData[0];
+    const match = firstMove.match(/^([a-n]\d{1,2})-([a-n]\d{1,2})$/);
+    
+    if (match) {
+      const from = fromEngineNotation(match[1]);
+      const to = fromEngineNotation(match[2]);
+      return {from, to};
+    } else {
+      return {from: null, to: null};
+    }
+  });
 
   // Parse FEN and set up pieces when fen signal changes
   createEffect(on(fen, (currentFen) => {
@@ -447,7 +444,7 @@ createEffect(on(() => props.pvLine, (pvLine) => {
               isDragging={isDragging()}
               pickedUpPiece={draggedPiece ? createPoint(draggedPiece.x,draggedPiece.y) : null}
               legalMoves={legalMoves()}
-              pvHighlight={pvHighlight()}
+              pvHighlight={pvHighlight}
               onHover={(hovered) => {
                 if (hovered) {
                   setHoveredCell(createPoint(x, y));
