@@ -62,7 +62,7 @@ export default function Page() {
   }
 
   function handleEngineMessage(message: { type: string; data?: unknown }) {
-    console.log('[Engine DEBUG] Received message:', message);
+    //console.log('[Engine DEBUG] Received message:', message);
     
     switch (message.type) {
       case 'ready':
@@ -70,29 +70,24 @@ export default function Page() {
         break;
 
       case 'info':
-        console.log('[Engine DEBUG] Info message data:', message.data);
         const info = message.data as {
           score?: number;
           pv?: string[];
         };
-        console.log('[Engine DEBUG] Parsed info - score:', info.score, 'pv:', info.pv);
         if (info.score !== undefined) setEvalScore(info.score);
         if (info.pv !== undefined) setPvLine(info.pv);
         break;
 
       case 'depth':
-        console.log('[Engine DEBUG] Depth message data:', message.data);
         const depthInfo = message.data as {
           depth?: number;
           nps?: number;
         };
-        console.log('[Engine DEBUG] Parsed depth - depth:', depthInfo.depth, 'nps:', depthInfo.nps);
         if (depthInfo.depth !== undefined) setDepth(depthInfo.depth);
         if (depthInfo.nps !== undefined) setNps(depthInfo.nps);
         break;
 
       case 'bestmove':
-        console.log('[Engine DEBUG] Bestmove message data:', message.data);
         // Analysis completed or stopped
         break;
 
@@ -101,7 +96,6 @@ export default function Page() {
         break;
         
       default:
-        console.log('[Engine DEBUG] Unknown message type:', message.type, message.data);
         break;
     }
   }
@@ -165,6 +159,7 @@ export default function Page() {
             onUndo={(undoFn: () => void) => { undoFunction = undoFn; }}
             onMove={handleBoardMove}
             onUndoMove={handleBoardUndo}
+            pvLine={pvLine()}
           />
         </div>
         <div class={styles.analysisContainer}>

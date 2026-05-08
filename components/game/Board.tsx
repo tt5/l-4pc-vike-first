@@ -21,6 +21,7 @@ interface BoardProps {
   onUndo?: (undoFn: () => void) => void;
   onMove?: (moveNotation: string) => void;
   onUndoMove?: () => void;
+  pvLine?: string[];
 }
 
 
@@ -41,6 +42,45 @@ const Board: Component<BoardProps> = (props) => {
     'GREEN': null
   });
 
+  // Parse first move from PV line and convert to coordinates
+  const [pvHighlight, setPvHighlight] = createSignal<{from: Point | null, to: Point | null}>({from: null, to: null});
+
+  // Convert engine notation to board coordinates (inverse of toEngineNotation)
+  const fromEngineNotation = (notation: string): Point | null => {
+    const files = 'abcdefghijklmn';
+    const match = notation.match(/^([a-n])(\d{1,2})$/);
+    if (!match) return null;
+    
+    const file = match[1];
+    const rank = parseInt(match[2]);
+    
+    const x = files.indexOf(file);
+    const y = 14 - rank; // Invert: rank 14 = row 0, rank 1 = row 13
+    
+    if (x < 0 || x >= 14 || y < 0 || y >= 14) return null;
+    
+    return createPoint(x, y);
+  };
+
+  // Parse first move from PV line and update highlights
+createEffect(on(() => props.pvLine, (pvLine) => {
+  const pvData = pvLine || [];
+  if (pvData.length === 0) {
+    setPvHighlight({from: null, to: null});
+    return;
+  }
+
+  const firstMove = pvData[0];
+  const match = firstMove.match(/^([a-n]\d{1,2})-([a-n]\d{1,2})$/);
+  
+  if (match) {
+    const from = fromEngineNotation(match[1]);
+    const to = fromEngineNotation(match[2]);
+    setPvHighlight({from, to});
+  } else {
+    setPvHighlight({from: null, to: null});
+  }
+}, { defer: false }));
 
   // Parse FEN and set up pieces when fen signal changes
   createEffect(on(fen, (currentFen) => {
@@ -407,6 +447,7 @@ const Board: Component<BoardProps> = (props) => {
               isDragging={isDragging()}
               pickedUpPiece={draggedPiece ? createPoint(draggedPiece.x,draggedPiece.y) : null}
               legalMoves={legalMoves()}
+              pvHighlight={pvHighlight()}
               onHover={(hovered) => {
                 if (hovered) {
                   setHoveredCell(createPoint(x, y));

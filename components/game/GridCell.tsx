@@ -23,15 +23,25 @@ interface GridCellProps {
   onClick?: () => void;
   onPiecePickup: (point: Point) => void;
   onPieceDrop?: (point: Point) => void;
+  pvHighlight?: {from: Point | null, to: Point | null};
 }
 
 export const GridCell: Component<GridCellProps> = (props) => {
-  const { state, x, y, isDragging: isDraggingProp, pickedUpPiece, legalMoves } = props;
+  const { state, x, y, isDragging: isDraggingProp, pickedUpPiece, legalMoves, pvHighlight } = props;
   
   const isValidMoveTarget = () => {
     return legalMoves.some(move => move.x === x && move.y === y);
   };
   const { isPiece, isHovered, id, color, pieceType } = state;
+
+  // Check if this cell is part of the PV highlight
+  const isPvFrom = () => {
+    return pvHighlight?.from && pvHighlight.from[0] === x && pvHighlight.from[1] === y;
+  };
+
+  const isPvTo = () => {
+    return pvHighlight?.to && pvHighlight.to[0] === x && pvHighlight.to[1] === y;
+  };
   
   const handleMouseDown = (e: MouseEvent) => {
     if (isPiece) {
@@ -62,6 +72,12 @@ export const GridCell: Component<GridCellProps> = (props) => {
     }
     if (isDraggingProp && isValidMoveTarget()) {
       classes.push(styles['valid-move-target']);
+    }
+    if (isPvFrom()) {
+      classes.push(styles.bestMoveFrom);
+    }
+    if (isPvTo()) {
+      classes.push(styles.bestMoveTo);
     }
     return classes.join(' ');
   };
