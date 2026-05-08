@@ -14,6 +14,7 @@ import threading
 import queue
 from pathlib import Path
 from typing import List, Optional
+from time import sleep
 
 # Paths to engine binaries
 CHESS_CLI = Path(__file__).parent / "4pchess" / "cli"
@@ -97,7 +98,7 @@ class Engine:
 class PVBridge:
     """Bridge 4pchess PV output to 4pcheckmate positions."""
     
-    INFO_RE = re.compile(r'info\s+depth\s+(\d+).*?pv\s+(.+?)(?:\s+score|\s*$)')
+    INFO_RE = re.compile(r'info\s+pv\s+(.+?)(\s*$)')
     
     def __init__(self, chess_path: Path, checkmate_path: Path):
         self.chess = Engine(chess_path, "4pchess")
@@ -125,7 +126,7 @@ class PVBridge:
         self.depth = depth
     
 
-    def update_checkmate(self, pv: List[str], depth: int) -> None:
+    def update_checkmate(self, pv: List[str]) -> None:
         """Update 4pcheckmate to search the PV position."""
         l = 1
         if pv == self.current_pv:
@@ -138,11 +139,6 @@ class PVBridge:
         else:
             print("> new")
         self.oldpv = self.current_pv
-        
-        #if depth < 10:
-        #    return
-        
-        #print(f"[Bridge] PV @ depth {depth}: {' '.join(pv)}")
         
         # Send stop, new position, go
         self.checkmate.send("stop")
@@ -171,6 +167,7 @@ class PVBridge:
         self.running = True
         
         # Start 4pchess search
+        sleep(10)
         self.chess.send(f"go depth {self.depth}")
         
         while self.running:
@@ -181,9 +178,8 @@ class PVBridge:
                 # Parse PV info
                 m = self.INFO_RE.match(line)
                 if m:
-                    depth = int(m.group(1))
-                    pv_moves = m.group(2).strip().split()
-                    self.update_checkmate(pv_moves, depth)
+                    pv_moves = m.group(1).strip().split()
+                    self.update_checkmate(pv_moves)
             
             # Show 4pchess errors
             for line in self.chess.get_errors():
