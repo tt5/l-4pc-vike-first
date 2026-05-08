@@ -39,6 +39,20 @@ def reader_thread(proc, out_queue, err_queue, name):
     threading.Thread(target=read_stderr, name=f"{name}-err").start()
 
 
+def stdin_reader_thread(stdin_queue):
+    """Read stdin commands into a queue."""
+    try:
+        while True:
+            line = sys.stdin.readline()
+            if not line:
+                break
+            cmd = line.strip()
+            if cmd:
+                stdin_queue.put(cmd)
+    except (EOFError, KeyboardInterrupt):
+        pass
+
+
 class Engine:
     """Simple engine wrapper with threaded I/O."""
     
@@ -108,6 +122,8 @@ class PVBridge:
         self.position = "startpos"
         self.current_pv = []
         self.oldpv = []
+        self.stdin_queue = queue.Queue()
+        threading.Thread(target=stdin_reader_thread, args=(self.stdin_queue,), daemon=True).start()
     
     def set_position(self, pos: str) -> None:
         """Set position on both engines."""
@@ -124,6 +140,20 @@ class PVBridge:
     
     def set_depth(self, depth: int) -> None:
         self.depth = depth
+    
+    def handle_stdin_command(self, cmd: str) -> None:
+        """Process stdin commands."""
+        cmd = cmd.lower().strip()
+        
+        if cmd == "go":
+            print(f"[User] -> go depth {self.depth}")
+            self.chess.send(f"go depth {self.depth}")
+        elif cmd == "stop":
+            print("[User] -> stop")
+            self.chess.send("stop")
+        else:
+            print(f"[User] Unknown command: {cmd}")
+            print("[User] Available commands: go, stop")
     
 
     def update_checkmate(self, pv: List[str]) -> None:
@@ -171,6 +201,14 @@ class PVBridge:
         self.chess.send(f"go depth {self.depth}")
         
         while self.running:
+            # Process stdin commands
+            while True:
+                try:
+                    cmd = self.stdin_queue.get_nowait()
+                    self.handle_stdin_command(cmd)
+                except queue.Empty:
+                    break
+            
             # Process 4pchess output
             for line in self.chess.get_lines():
                 print(f"[4pchess ->] {line}")
@@ -230,6 +268,7 @@ def main():
     
     print(f"[Bridge] Starting: position={args.position}, depth={args.depth}")
     print("[Bridge] Ctrl+C to stop")
+    print("[Bridge] Stdin commands available: go, stop")
     
     bridge.run()
     bridge.stop()
