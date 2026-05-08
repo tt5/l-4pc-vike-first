@@ -255,24 +255,14 @@ class PVBridge:
 
 
 def main():
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Bridge 4pchess PV to 4pcheckmate")
-    parser.add_argument("--depth", type=int, default=100, help="Search depth")
-    parser.add_argument("--position", type=str, default="startpos", help="startpos or FEN")
-    parser.add_argument("--chess-cli", type=Path, default=CHESS_CLI)
-    parser.add_argument("--checkmate-cli", type=Path, default=CHECKMATE_CLI)
-    
-    args = parser.parse_args()
-    
-    for path, name in [(args.chess_cli, "4pchess"), (args.checkmate_cli, "4pcheckmate")]:
+    for path, name in [(CHESS_CLI, "4pchess"), (CHECKMATE_CLI, "4pcheckmate")]:
         if not path.exists():
             print(f"Error: {name} not found: {path}", file=sys.stderr)
             sys.exit(1)
     
-    bridge = PVBridge(args.chess_cli, args.checkmate_cli)
-    bridge.set_position(args.position)
-    bridge.set_depth(args.depth)
+    bridge = PVBridge(CHESS_CLI, CHECKMATE_CLI)
+    bridge.set_position("startpos")
+    bridge.set_depth(100)
     
     def handler(sig, frame):
         print("\n[Bridge] Stopping...")
@@ -281,7 +271,7 @@ def main():
     
     signal.signal(signal.SIGINT, handler)
     
-    print(f"[Bridge] Starting: position={args.position}, depth={args.depth}")
+    print("[Bridge] Starting: position=startpos, depth=100")
     print("[Bridge] Ctrl+C to stop")
     print("[Bridge] Stdin commands available: go, stop, move <from>-<to>")
     print("[Bridge] Waiting for 'go' command to start analysis...")
