@@ -1,5 +1,5 @@
 `./nats-server`
 
-`python pv_bridge`
+`python pv_bridge.py`
 
 `npm run dev`
