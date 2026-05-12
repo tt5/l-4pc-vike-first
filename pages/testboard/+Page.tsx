@@ -113,7 +113,7 @@ export default function Page() {
   }
 
   function handleBoardUndo() {
-    console.log('[Board] Undo');
+    console.log('[Board] Go back');
     // Notify engine of undo
     sendCommand({ type: 'undo' });
     
@@ -124,7 +124,7 @@ export default function Page() {
     }
   }
 
-  function handleUndo() {
+  function handleGoBack() {
     if (undoFunction) {
       undoFunction();
     }
@@ -146,8 +146,8 @@ export default function Page() {
     <div class={styles.page}>
       <div class={styles.controlsContainer}>
         <h2>Board Controls</h2>
-        <button class={styles.undoButton} onClick={handleUndo}>
-          Undo Move
+        <button class={styles.undoButton} onClick={handleGoBack}>
+          Go Back
         </button>
         <div class={styles.connectionStatus}>
           Engine: {isConnected() ? 'Connected' : 'Disconnected'}

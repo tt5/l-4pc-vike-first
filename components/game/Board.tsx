@@ -92,10 +92,10 @@ const Board: Component<BoardProps> = (props) => {
     // update state
   }, { defer: false }));
 
-  // Expose undo function to parent component
+  // Expose go back function to parent component
   onMount(() => {
     if (props.onUndo) {
-      props.onUndo(() => undoLastMove());
+      props.onUndo(() => goBack());
     }
   });
 
@@ -331,12 +331,12 @@ const Board: Component<BoardProps> = (props) => {
     }));
   };
 
-  const undoLastMove = () => {
+  const goBack = () => {
     const currentTree = moveTree();
     const currentNode = getCurrentNode(currentTree);
     
     if (!currentNode || currentNode.parentId === null) {
-      return; // Can't undo from root node
+      return; // Can't go back from root node
     }
 
     const parentNode = currentTree.nodes.get(currentNode.parentId);
@@ -351,8 +351,8 @@ const Board: Component<BoardProps> = (props) => {
       setMoveTree(prev => {
         const newTree = { ...prev };
         navigateToParent(newTree);
-        console.log('[Rose Tree] Undo performed, navigated to parent');
-        console.log('[Rose Tree] Current history after undo:', getMoveHistory(newTree));
+        console.log('[Rose Tree] Go back performed, navigated to parent');
+        console.log('[Rose Tree] Current history after go back:', getMoveHistory(newTree));
         return newTree;
       });
 
@@ -416,7 +416,7 @@ const Board: Component<BoardProps> = (props) => {
       
       // Restore en passant targets to previous state
       // This is simplified - in a full implementation, we'd need to track en passant history
-      // For now, we'll clear all en passant targets after undo
+      // For now, we'll clear all en passant targets after go back
       setEnPassantTargets({
         'RED': null,
         'YELLOW': null,
@@ -425,7 +425,7 @@ const Board: Component<BoardProps> = (props) => {
       });
     });
     
-    // Notify parent component of the undo
+    // Notify parent component of the go back action
     props.onUndoMove?.();
   };
 
