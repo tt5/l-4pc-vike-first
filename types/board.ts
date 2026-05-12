@@ -54,3 +54,18 @@ export interface LegalMove {
   isEnPassant?: boolean;
   capturedPiece?: CapturedPiece;
 }
+
+// Rose tree data structure for move history
+export interface RoseTreeNode {
+  id: string;                    // Unique identifier for the node
+  move?: Move;                   // Move data (undefined for root node)
+  parentId: string | null;       // Reference to parent node
+  children: string[];            // Array of child node IDs
+  isRoot: boolean;              // True for initial position
+}
+
+export interface RoseTree {
+  nodes: Map<string, RoseTreeNode>;  // All nodes in the tree
+  currentNodeId: string;             // Current position pointer
+  rootNodeId: string;               // Root node reference
+}

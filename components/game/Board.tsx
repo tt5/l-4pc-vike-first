@@ -12,8 +12,9 @@ import {
 import { GridCell } from './GridCell';
 
 import styles from './Board.module.css';
-import { createPoint, NamedColor, Piece, Point, LegalMove, Move } from '../../types/board';
+import { createPoint, NamedColor, Piece, Point, LegalMove, Move, RoseTree } from '../../types/board';
 import { PLAYER_COLORS, getColorHex, parseFen, isInNonPlayableCorner, getLegalMoves } from '../../utils/game';
+import { createRoseTree, addMove, navigateToParent, getCurrentNode, getMoveHistory } from '../../utils/roseTree';
 
 interface BoardProps {
   gameId?: string;
@@ -34,8 +35,7 @@ const Board: Component<BoardProps> = (props) => {
   const [pickedUpPiece, setPickedUpPiece] = createSignal<Piece | null>(null);
   const [legalMoves, setLegalMoves] = createSignal<LegalMove[]>([]);
   const [isDragging, setIsDragging] = createSignal(false);
-  const [moves, setMoves] = createSignal<Move[]>([]);
-  const [currentMoveIndex, setCurrentMoveIndex] = createSignal(0);
+  const [moveTree, setMoveTree] = createSignal<RoseTree>(createRoseTree());
   const [fen, setFen] = createSignal<string>('R-0,0,0,0-1,1,1,1-1,1,1,1-0,0,0,0-0-3yRyNyByKyQyByNyR3/3yPyPyPyPyPyPyPyP3/14/bRbP10gPgR/bNbP10gPgN/bBbP10gPgB/bQbP10gPgK/bKbP10gPgQ/bBbP10gPgB/bNbP10gPgN/bRbP10gPgR/14/3rPrPrPrPrPrPrPrP3/3rRrNrBrQrKrBrNrR3--,-,-,-');
   const [enPassantTargets, setEnPassantTargets] = createSignal<Record<NamedColor, {x: number, y: number, color: NamedColor} | null>>({
     'RED': null,
@@ -114,7 +114,7 @@ const Board: Component<BoardProps> = (props) => {
     onCleanup(() => document.removeEventListener('mouseup', handleGlobalMouseUp));
   });
 
-  const currentPlayerColor = () => PLAYER_COLORS[currentMoveIndex() % PLAYER_COLORS.length];
+  const currentPlayerColor = () => PLAYER_COLORS[getMoveHistory(moveTree()).length % PLAYER_COLORS.length];
 
   // Convert board coordinates to engine algebraic notation
   // x: 0-13 -> files a-n, y: 0-13 -> ranks 14-1 (inverted)
@@ -267,14 +267,17 @@ const Board: Component<BoardProps> = (props) => {
       return next;
     });
 
-    // Record move
-    setMoves(prev => [...prev, newMove]);
+    // Add move to rose tree
+    setMoveTree(prev => {
+      const newTree = { ...prev };
+      addMove(newTree, newMove);
+      console.log('[Rose Tree] Move added:', newMove);
+      console.log('[Rose Tree] Current history:', getMoveHistory(newTree));
+      return newTree;
+    });
     
     // Update en passant targets
     updateEnPassantTarget(piece, target[0], target[1]);
-    
-    // Advance turn
-    setCurrentMoveIndex(prev => prev + 1);
     
     // Notify parent component of the move
     const moveNotation = getMoveNotation(piece.x, piece.y, target[0], target[1]);
@@ -329,12 +332,30 @@ const Board: Component<BoardProps> = (props) => {
   };
 
   const undoLastMove = () => {
-    const currentMoves = moves();
-    if (currentMoves.length === 0) return; // Can't undo at game start
+    const currentTree = moveTree();
+    const currentNode = getCurrentNode(currentTree);
+    
+    if (!currentNode || currentNode.parentId === null) {
+      return; // Can't undo from root node
+    }
 
-    const lastMove = currentMoves[currentMoves.length - 1];
+    const parentNode = currentTree.nodes.get(currentNode.parentId);
+    if (!parentNode || !currentNode.move) {
+      return;
+    }
+
+    const lastMove = currentNode.move;
     
     batch(() => {
+      // Navigate to parent in rose tree
+      setMoveTree(prev => {
+        const newTree = { ...prev };
+        navigateToParent(newTree);
+        console.log('[Rose Tree] Undo performed, navigated to parent');
+        console.log('[Rose Tree] Current history after undo:', getMoveHistory(newTree));
+        return newTree;
+      });
+
       // Restore pieces to previous state
       setPieces(prev => {
         let newPieces = [...prev];
@@ -392,12 +413,6 @@ const Board: Component<BoardProps> = (props) => {
         
         return newPieces;
       });
-      
-      // Remove the last move from history
-      setMoves(prev => prev.slice(0, -1));
-      
-      // Decrement current move index
-      setCurrentMoveIndex(prev => Math.max(0, prev - 1));
       
       // Restore en passant targets to previous state
       // This is simplified - in a full implementation, we'd need to track en passant history
