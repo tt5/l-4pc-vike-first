@@ -14,7 +14,7 @@ import { GridCell } from './GridCell';
 import styles from './Board.module.css';
 import { createPoint, NamedColor, Piece, Point, LegalMove, Move, RoseTree } from '../../types/board';
 import { PLAYER_COLORS, getColorHex, parseFen, isInNonPlayableCorner, getLegalMoves } from '../../utils/game';
-import { createRoseTree, addMove, navigateToParent, getCurrentNode, getMoveHistory } from '../../utils/roseTree';
+import { createRoseTree, addMove, navigateToParent, getCurrentNode, getMoveHistory, logTree } from '../../utils/roseTree';
 
 interface BoardProps {
   gameId?: string;
@@ -271,8 +271,6 @@ const Board: Component<BoardProps> = (props) => {
     setMoveTree(prev => {
       const newTree = { ...prev };
       addMove(newTree, newMove);
-      console.log('[Rose Tree] Move added:', newMove);
-      console.log('[Rose Tree] Current history:', getMoveHistory(newTree));
       return newTree;
     });
     
@@ -351,8 +349,6 @@ const Board: Component<BoardProps> = (props) => {
       setMoveTree(prev => {
         const newTree = { ...prev };
         navigateToParent(newTree);
-        console.log('[Rose Tree] Go back performed, navigated to parent');
-        console.log('[Rose Tree] Current history after go back:', getMoveHistory(newTree));
         return newTree;
       });
 
@@ -427,6 +423,10 @@ const Board: Component<BoardProps> = (props) => {
     
     // Notify parent component of the go back action
     props.onUndoMove?.();
+
+    // Log full tree structure after undo
+    console.log('[RoseTree] ── Tree after undo ──');
+    logTree(moveTree());
   };
 
 

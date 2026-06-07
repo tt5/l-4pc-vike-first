@@ -38,6 +38,8 @@ export function addMove(tree: RoseTree, move: Move): string {
     throw new Error('Current node not found in tree');
   }
 
+  const branching = currentNode.children.length > 0;
+
   const newNodeId = generateNodeId();
   const newNode: RoseTreeNode = {
     id: newNodeId,
@@ -56,6 +58,10 @@ export function addMove(tree: RoseTree, move: Move): string {
   // Update current position to new node
   tree.currentNodeId = newNodeId;
 
+  console.log(`[RoseTree] addMove → node ${newNodeId} (${move.type} ${String.fromCharCode(97+move.fromX)}${14-move.fromY}-${String.fromCharCode(97+move.toX)}${14-move.toY})${branching ? ' ⚡ BRANCH created' : ''}`);
+  console.log(`[RoseTree]   parent: ${newNode.parentId} | siblings: ${currentNode.children.length} | depth: ${getDepth(tree, newNodeId)}`);
+  logTreeStats(tree);
+
   return newNodeId;
 }
 
@@ -66,7 +72,25 @@ export function navigateToParent(tree: RoseTree): boolean {
     return false; // Cannot undo from root
   }
 
+  const fromId = tree.currentNodeId;
+  const fromMove = currentNode.move;
+  const notation = fromMove ? `${String.fromCharCode(97+fromMove.fromX)}${14-fromMove.fromY}-${String.fromCharCode(97+fromMove.toX)}${14-fromMove.toY}` : 'root';
+
   tree.currentNodeId = currentNode.parentId;
+
+  const parentChildren = getCurrentNode(tree)!.children;
+  if (parentChildren.length > 1) {
+    const siblings = parentChildren.map(id => {
+      const n = tree.nodes.get(id);
+      const m = n?.move;
+      return m ? `${String.fromCharCode(97+m.fromX)}${14-m.fromY}-${String.fromCharCode(97+m.toX)}$${14-m.toY}` : 'root';
+    });
+    console.log(`[RoseTree] navigateToParent ← node ${fromId} (${notation}) [branch point: ${parentChildren.length} variations]`);
+    console.log(`[RoseTree]   sibling variations at this position: ${siblings.join(', ')}`);
+  } else {
+    console.log(`[RoseTree] navigateToParent ← node ${fromId} (${notation})`);
+  }
+
   return true;
 }
 
@@ -77,7 +101,13 @@ export function navigateToChild(tree: RoseTree, childId: string): boolean {
     return false;
   }
 
+  const fromId = tree.currentNodeId;
   tree.currentNodeId = childId;
+
+  const childMove = tree.nodes.get(childId)?.move;
+  const notation = childMove ? `${String.fromCharCode(97+childMove.fromX)}${14-childMove.fromY}-${String.fromCharCode(97+childMove.toX)}${14-childMove.toY}` : 'root';
+  console.log(`[RoseTree] navigateToChild → node ${childId} (${notation}) [${currentNode.children.length} children at parent]`);
+
   return true;
 }
 
@@ -134,4 +164,58 @@ export function getChildMoves(tree: RoseTree): Move[] {
     .map(childId => tree.nodes.get(childId))
     .filter((node): node is RoseTreeNode => node !== undefined && node.move !== undefined)
     .map(node => node.move!);
+}
+
+// ── Debug helpers ─────────────────────────────────────────────────────────────
+
+// Get depth of a node from root
+function getDepth(tree: RoseTree, nodeId: string): number {
+  let depth = 0;
+  let current = tree.nodes.get(nodeId);
+  while (current && current.parentId !== null) {
+    depth++;
+    current = tree.nodes.get(current.parentId);
+  }
+  return depth;
+}
+
+// Count total branches (nodes with >1 children)
+function countBranches(tree: RoseTree): number {
+  let count = 0;
+  tree.nodes.forEach(node => {
+    if (node.children.length > 1) count++;
+  });
+  return count;
+}
+
+// Log compact tree statistics
+export function logTreeStats(tree: RoseTree): void {
+  const totalNodes = tree.nodes.size;
+  const branches = countBranches(tree);
+  const maxChildren = Math.max(...Array.from(tree.nodes.values()).map(n => n.children.length));
+  const leafCount = Array.from(tree.nodes.values()).filter(n => n.children.length === 0).length;
+  const currentDepth = getDepth(tree, tree.currentNodeId);
+
+  console.log(`[RoseTree] 📊 stats: ${totalNodes} nodes | depth: ${currentDepth} | branches: ${branches} | max variations/node: ${maxChildren} | leaves: ${leafCount}`);
+}
+
+// Log the full tree structure (ASCII)
+export function logTree(tree: RoseTree, nodeId?: string, prefix = '', isLast = true): void {
+  const id = nodeId ?? tree.rootNodeId;
+  const node = tree.nodes.get(id);
+  if (!node) return;
+
+  const connector = prefix === '' ? '🌳' : (isLast ? '└── ' : '├── ');
+  const moveNotation = node.move
+    ? `${String.fromCharCode(97 + node.move.fromX)}${14 - node.move.fromY}-${String.fromCharCode(97 + node.move.toX)}${14 - node.move.toY}`
+    : '(root)';
+  const branchMarker = node.children.length > 1 ? ` ⚡×${node.children.length}` : '';
+  const currentMarker = id === tree.currentNodeId ? ' ◀ current' : '';
+
+  console.log(`${prefix}${connector}[${id}] ${moveNotation}${branchMarker}${currentMarker}`);
+
+  const extension = prefix === '' ? '' : (isLast ? '    ' : '│   ');
+  node.children.forEach((childId, i) => {
+    logTree(tree, childId, prefix + extension, i === node.children.length - 1);
+  });
 }
