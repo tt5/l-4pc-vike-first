@@ -19,6 +19,7 @@ interface MoveEntry {
   move: Move;
   notation: string;
   isFuture: boolean;
+  isCurrent: boolean;
 }
 
 const MoveHistory: Component<MoveHistoryProps> = (props) => {
@@ -43,7 +44,8 @@ const MoveHistory: Component<MoveHistoryProps> = (props) => {
       const color = PLAYER_COLORS[colorIndex];
       const notation = moveToNotation(move);
       const isFuture = i > cur;
-      const entry: MoveEntry = { move, notation, isFuture };
+      const isCurrent = i === cur;
+      const entry: MoveEntry = { move, notation, isFuture, isCurrent };
 
       if (color === 'RED') {
         current = { moveNum: pairs.length + 1, red: entry };
@@ -71,22 +73,22 @@ const MoveHistory: Component<MoveHistoryProps> = (props) => {
             <div class={styles.moveRow}>
               <span class={styles.moveNumber}>{pair.moveNum}.</span>
               {pair.red && (
-                <span class={`${styles.move} ${styles.colorRed} ${pair.red.isFuture ? styles.future : ''}`}>
+                <span class={`${styles.move} ${styles.colorRed} ${pair.red.isCurrent ? styles.current : ''} ${pair.red.isFuture ? styles.future : ''}`}>
                   {pair.red.notation}
                 </span>
               )}
               {pair.blue && (
-                <span class={`${styles.move} ${styles.colorBlue} ${pair.blue.isFuture ? styles.future : ''}`}>
+                <span class={`${styles.move} ${styles.colorBlue} ${pair.blue.isCurrent ? styles.current : ''} ${pair.blue.isFuture ? styles.future : ''}`}>
                   {pair.blue.notation}
                 </span>
               )}
               {pair.yellow && (
-                <span class={`${styles.move} ${styles.colorYellow} ${pair.yellow.isFuture ? styles.future : ''}`}>
+                <span class={`${styles.move} ${styles.colorYellow} ${pair.yellow.isCurrent ? styles.current : ''} ${pair.yellow.isFuture ? styles.future : ''}`}>
                   {pair.yellow.notation}
                 </span>
               )}
               {pair.green && (
-                <span class={`${styles.move} ${styles.colorGreen} ${pair.green.isFuture ? styles.future : ''}`}>
+                <span class={`${styles.move} ${styles.colorGreen} ${pair.green.isCurrent ? styles.current : ''} ${pair.green.isFuture ? styles.future : ''}`}>
                   {pair.green.notation}
                 </span>
               )}

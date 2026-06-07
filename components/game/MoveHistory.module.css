@@ -76,6 +76,11 @@
   opacity: 0.45;
 }
 
+.move.current {
+  font-weight: bold;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
 .colorRed {
   color: #c62828;
 }

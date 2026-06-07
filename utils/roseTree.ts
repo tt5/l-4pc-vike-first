@@ -157,16 +157,16 @@ export function getMoveHistory(tree: RoseTree): Move[] {
 
 // Get the index of the current node in the full line (0-based move index, -1 for root)
 export function getCurrentMoveIndex(tree: RoseTree): number {
-  let index = 0;
-  let currentNodeId = tree.currentNodeId;
-  while (currentNodeId !== null) {
-    const node = tree.nodes.get(currentNodeId);
+  // Walk from current node up to root, counting moves
+  let count = 0;
+  let nodeId: string | null = tree.currentNodeId;
+  while (nodeId !== null) {
+    const node = tree.nodes.get(nodeId);
     if (!node) break;
-    if (node.parentId === null) return index;
-    index++;
-    currentNodeId = node.parentId;
+    if (node.move) count++;
+    nodeId = node.parentId;
   }
-  return index;
+  return count - 1; // -1 for root (no move), 0-based
 }
 
 // Get the deepest leaf node in the current variation (follows last child at each branch)
