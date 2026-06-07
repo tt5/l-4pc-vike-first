@@ -200,22 +200,26 @@ export function logTreeStats(tree: RoseTree): void {
 }
 
 // Log the full tree structure (ASCII)
-export function logTree(tree: RoseTree, nodeId?: string, prefix = '', isLast = true): void {
+export function logTree(tree: RoseTree, nodeId?: string, prefix = '', isLast = true, isRoot = true): void {
   const id = nodeId ?? tree.rootNodeId;
   const node = tree.nodes.get(id);
   if (!node) return;
 
-  const connector = prefix === '' ? '🌳' : (isLast ? '└── ' : '├── ');
   const moveNotation = node.move
     ? `${String.fromCharCode(97 + node.move.fromX)}${14 - node.move.fromY}-${String.fromCharCode(97 + node.move.toX)}${14 - node.move.toY}`
     : '(root)';
   const branchMarker = node.children.length > 1 ? ` ⚡×${node.children.length}` : '';
-  const currentMarker = id === tree.currentNodeId ? ' ◀ current' : '';
+  const currentMarker = id === tree.currentNodeId ? ' ◀' : '';
 
-  console.log(`${prefix}${connector}[${id}] ${moveNotation}${branchMarker}${currentMarker}`);
+  if (isRoot) {
+    console.log(`🌳 [${id}] ${moveNotation}${branchMarker}${currentMarker}`);
+  } else {
+    const connector = isLast ? '└── ' : '├── ';
+    console.log(`${prefix}${connector}[${id}] ${moveNotation}${branchMarker}${currentMarker}`);
+  }
 
-  const extension = prefix === '' ? '' : (isLast ? '    ' : '│   ');
+  const childPrefix = isRoot ? '' : prefix + (isLast ? '    ' : '│   ');
   node.children.forEach((childId, i) => {
-    logTree(tree, childId, prefix + extension, i === node.children.length - 1);
+    logTree(tree, childId, childPrefix, i === node.children.length - 1, false);
   });
 }
