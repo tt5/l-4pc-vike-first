@@ -38,6 +38,18 @@ export function addMove(tree: RoseTree, move: Move): string {
     throw new Error('Current node not found in tree');
   }
 
+  // Check if a child with the same move already exists — if so, navigate to it
+  const existingChildId = currentNode.children.find(childId => {
+    const childNode = tree.nodes.get(childId);
+    return childNode?.move && movesEqual(childNode.move, move);
+  });
+
+  if (existingChildId) {
+    tree.currentNodeId = existingChildId;
+    console.log(`[RoseTree] addMove → reused node ${existingChildId} (${move.type} ${String.fromCharCode(97+move.fromX)}${14-move.fromY}-${String.fromCharCode(97+move.toX)}${14-move.toY})`);
+    return existingChildId;
+  }
+
   const branching = currentNode.children.length > 0;
 
   const newNodeId = generateNodeId();
