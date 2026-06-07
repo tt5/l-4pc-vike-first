@@ -153,3 +153,5 @@ cdk.out
 
 sqlite.db
 nats-server
+
+__pycache__
