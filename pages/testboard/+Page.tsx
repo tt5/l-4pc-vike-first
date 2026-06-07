@@ -1,11 +1,17 @@
 import { createSignal, onMount, onCleanup } from "solid-js";
 import Board from "../../components/game/Board";
 import EngineAnalysis from "../../components/game/EngineAnalysis";
+import MoveHistory from "../../components/game/MoveHistory";
+import type { RoseTree } from "../../types/board";
+import { createRoseTree } from "../../utils/roseTree";
 import styles from "./Page.module.css";
 
 export default function Page() {
   let undoFunction: (() => void) | undefined;
   let ws: WebSocket | undefined;
+
+  // Rose tree for move history display
+  const [moveTree, setMoveTree] = createSignal<RoseTree>(createRoseTree());
 
   // Analysis state
   const [isAnalyzing, setIsAnalyzing] = createSignal(false);
@@ -159,19 +165,25 @@ export default function Page() {
             onUndo={(undoFn: () => void) => { undoFunction = undoFn; }}
             onMove={handleBoardMove}
             onUndoMove={handleBoardUndo}
+            onTreeChange={setMoveTree}
             pvLine={pvLine()}
             isAnalyzing={isAnalyzing()}
           />
         </div>
-        <div class={styles.analysisContainer}>
-          <EngineAnalysis
-            isAnalyzing={isAnalyzing()}
-            evalScore={evalScore()}
-            pvLine={pvLine()}
-            depth={depth()}
-            nps={nps()}
-            onToggleAnalysis={toggleAnalysis}
-          />
+        <div class={styles.sidebar}>
+          <div class={styles.analysisContainer}>
+            <EngineAnalysis
+              isAnalyzing={isAnalyzing()}
+              evalScore={evalScore()}
+              pvLine={pvLine()}
+              depth={depth()}
+              nps={nps()}
+              onToggleAnalysis={toggleAnalysis}
+            />
+          </div>
+          <div class={styles.historyContainer}>
+            <MoveHistory moveTree={moveTree()} />
+          </div>
         </div>
       </div>
     </div>

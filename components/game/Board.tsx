@@ -23,6 +23,7 @@ interface BoardProps {
   onUndo?: (undoFn: () => void) => void;
   onMove?: (moveNotation: string) => void;
   onUndoMove?: () => void;
+  onTreeChange?: (tree: RoseTree) => void;
   pvLine?: string[];
   isAnalyzing?: boolean;
 }
@@ -271,6 +272,7 @@ const Board: Component<BoardProps> = (props) => {
     setMoveTree(prev => {
       const newTree = { ...prev };
       addMove(newTree, newMove);
+      props.onTreeChange?.(newTree);
       return newTree;
     });
     
@@ -349,6 +351,7 @@ const Board: Component<BoardProps> = (props) => {
       setMoveTree(prev => {
         const newTree = { ...prev };
         navigateToParent(newTree);
+        props.onTreeChange?.(newTree);
         return newTree;
       });
 
