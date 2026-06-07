@@ -155,6 +155,44 @@ export function getMoveHistory(tree: RoseTree): Move[] {
   return history;
 }
 
+// Get the index of the current node in the full line (0-based move index, -1 for root)
+export function getCurrentMoveIndex(tree: RoseTree): number {
+  let index = 0;
+  let currentNodeId = tree.currentNodeId;
+  while (currentNodeId !== null) {
+    const node = tree.nodes.get(currentNodeId);
+    if (!node) break;
+    if (node.parentId === null) return index;
+    index++;
+    currentNodeId = node.parentId;
+  }
+  return index;
+}
+
+// Get the deepest leaf node in the current variation (follows last child at each branch)
+export function getDeepestLeafId(tree: RoseTree, nodeId?: string): string {
+  const id = nodeId ?? tree.currentNodeId;
+  const node = tree.nodes.get(id);
+  if (!node || node.children.length === 0) return id;
+  return getDeepestLeafId(tree, node.children[node.children.length - 1]);
+}
+
+// Get full move history from root to the deepest leaf in the current variation
+export function getFullLine(tree: RoseTree): Move[] {
+  const leafId = getDeepestLeafId(tree);
+  const history: Move[] = [];
+  let currentNodeId: string | null = leafId;
+
+  while (currentNodeId !== null) {
+    const node = tree.nodes.get(currentNodeId);
+    if (!node) break;
+    if (node.move) history.unshift(node.move);
+    currentNodeId = node.parentId;
+  }
+
+  return history;
+}
+
 // Get all moves from current node (for redo functionality)
 export function getChildMoves(tree: RoseTree): Move[] {
   const currentNode = getCurrentNode(tree);

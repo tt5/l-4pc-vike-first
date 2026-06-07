@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup } from "solid-js";
+import { createSignal, createMemo, onMount, onCleanup } from "solid-js";
 import Board from "../../components/game/Board";
 import EngineAnalysis from "../../components/game/EngineAnalysis";
 import MoveHistory from "../../components/game/MoveHistory";
@@ -12,6 +12,13 @@ export default function Page() {
 
   // Rose tree for move history display
   const [moveTree, setMoveTree] = createSignal<RoseTree>(createRoseTree());
+  const [treeVersion, setTreeVersion] = createSignal(0);
+
+  // Force re-read of moveTree when version changes (avoids Solid batching issues)
+  const syncedTree = createMemo(() => {
+    treeVersion(); // subscribe to version changes
+    return moveTree();
+  });
 
   // Analysis state
   const [isAnalyzing, setIsAnalyzing] = createSignal(false);
@@ -165,7 +172,7 @@ export default function Page() {
             onUndo={(undoFn: () => void) => { undoFunction = undoFn; }}
             onMove={handleBoardMove}
             onUndoMove={handleBoardUndo}
-            onTreeChange={setMoveTree}
+            onTreeChange={(tree) => { setMoveTree(tree); setTreeVersion(v => v + 1); }}
             pvLine={pvLine()}
             isAnalyzing={isAnalyzing()}
           />
@@ -182,7 +189,7 @@ export default function Page() {
             />
           </div>
           <div class={styles.historyContainer}>
-            <MoveHistory moveTree={moveTree()} />
+            <MoveHistory moveTree={syncedTree()} />
           </div>
         </div>
       </div>

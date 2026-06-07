@@ -269,12 +269,16 @@ const Board: Component<BoardProps> = (props) => {
     });
 
     // Add move to rose tree
+    let updatedTree: RoseTree | undefined;
     setMoveTree(prev => {
       const newTree = { ...prev };
       addMove(newTree, newMove);
-      props.onTreeChange?.(newTree);
+      updatedTree = newTree;
       return newTree;
     });
+    if (updatedTree) {
+      props.onTreeChange?.(updatedTree);
+    }
     
     // Update en passant targets
     updateEnPassantTarget(piece, target[0], target[1]);
@@ -345,13 +349,14 @@ const Board: Component<BoardProps> = (props) => {
     }
 
     const lastMove = currentNode.move;
-    
+
+    let treeAfterUndo: RoseTree;
     batch(() => {
       // Navigate to parent in rose tree
       setMoveTree(prev => {
         const newTree = { ...prev };
         navigateToParent(newTree);
-        props.onTreeChange?.(newTree);
+        treeAfterUndo = newTree;
         return newTree;
       });
 
@@ -423,6 +428,11 @@ const Board: Component<BoardProps> = (props) => {
         'GREEN': null
       });
     });
+
+    // Notify parent of tree change (outside batch to avoid Solid nested-setter issues)
+    if (treeAfterUndo!) {
+      props.onTreeChange?.(treeAfterUndo);
+    }
     
     // Notify parent component of the go back action
     props.onUndoMove?.();

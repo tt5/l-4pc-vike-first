@@ -72,9 +72,8 @@
   cursor: default;
 }
 
-.move.current {
-  font-weight: bold;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.15);
+.move.future {
+  opacity: 0.45;
 }
 
 .colorRed {

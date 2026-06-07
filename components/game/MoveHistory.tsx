@@ -1,26 +1,12 @@
 import { createMemo, type Component } from 'solid-js';
-import { type Move, type RoseTree, type NamedColor } from '../../types/board';
+import { type Move, type RoseTree } from '../../types/board';
 import { PLAYER_COLORS } from '../../utils/game';
-import { getMoveHistory } from '../../utils/roseTree';
+import { getFullLine, getCurrentMoveIndex } from '../../utils/roseTree';
 import styles from './MoveHistory.module.css';
 
 interface MoveHistoryProps {
   moveTree: RoseTree;
 }
-
-const colorLabels: Record<NamedColor, string> = {
-  RED: 'R',
-  BLUE: 'B',
-  YELLOW: 'Y',
-  GREEN: 'G',
-};
-
-const colorClasses: Record<NamedColor, string> = {
-  RED: styles.colorRed,
-  BLUE: styles.colorBlue,
-  YELLOW: styles.colorYellow,
-  GREEN: styles.colorGreen,
-};
 
 function moveToNotation(move: Move): string {
   const files = 'abcdefghijklmn';
@@ -29,12 +15,26 @@ function moveToNotation(move: Move): string {
   return `${from}-${to}`;
 }
 
+interface MoveEntry {
+  move: Move;
+  notation: string;
+  isFuture: boolean;
+}
+
 const MoveHistory: Component<MoveHistoryProps> = (props) => {
-  const moves = createMemo(() => getMoveHistory(props.moveTree));
+  const currentIdx = createMemo(() => getCurrentMoveIndex(props.moveTree));
+  const allMoves = createMemo(() => getFullLine(props.moveTree));
 
   const movePairs = createMemo(() => {
-    const list = moves();
-    const pairs: { moveNum: number; red?: { move: Move; notation: string }; blue?: { move: Move; notation: string }; yellow?: { move: Move; notation: string }; green?: { move: Move; notation: string } }[] = [];
+    const list = allMoves();
+    const cur = currentIdx();
+    const pairs: {
+      moveNum: number;
+      red?: MoveEntry;
+      blue?: MoveEntry;
+      yellow?: MoveEntry;
+      green?: MoveEntry;
+    }[] = [];
     let current: typeof pairs[number] | null = null;
 
     for (let i = 0; i < list.length; i++) {
@@ -42,28 +42,26 @@ const MoveHistory: Component<MoveHistoryProps> = (props) => {
       const colorIndex = i % 4;
       const color = PLAYER_COLORS[colorIndex];
       const notation = moveToNotation(move);
+      const isFuture = i > cur;
+      const entry: MoveEntry = { move, notation, isFuture };
 
       if (color === 'RED') {
-        current = { moveNum: pairs.length + 1, red: { move, notation } };
+        current = { moveNum: pairs.length + 1, red: entry };
         pairs.push(current);
       } else if (current) {
-        current[color === 'BLUE' ? 'blue' : color === 'YELLOW' ? 'yellow' : 'green'] = { move, notation };
+        const key = color === 'BLUE' ? 'blue' : color === 'YELLOW' ? 'yellow' : 'green';
+        (current as any)[key] = entry;
       }
     }
 
     return pairs;
   });
 
-  const currentMoveIndex = createMemo(() => {
-    const list = moves();
-    return list.length - 1;
-  });
-
   return (
     <div class={styles.container}>
       <div class={styles.header}>
         <h3>Move History</h3>
-        <span class={styles.moveCount}>{moves().length} moves</span>
+        <span class={styles.moveCount}>{allMoves().length} moves</span>
       </div>
       <div class={styles.moveList}>
         {movePairs().length === 0 ? (
@@ -73,22 +71,22 @@ const MoveHistory: Component<MoveHistoryProps> = (props) => {
             <div class={styles.moveRow}>
               <span class={styles.moveNumber}>{pair.moveNum}.</span>
               {pair.red && (
-                <span class={`${styles.move} ${styles.colorRed} ${currentMoveIndex() === (pair.moveNum - 1) * 4 ? styles.current : ''}`}>
+                <span class={`${styles.move} ${styles.colorRed} ${pair.red.isFuture ? styles.future : ''}`}>
                   {pair.red.notation}
                 </span>
               )}
               {pair.blue && (
-                <span class={`${styles.move} ${styles.colorBlue} ${currentMoveIndex() === (pair.moveNum - 1) * 4 + 1 ? styles.current : ''}`}>
+                <span class={`${styles.move} ${styles.colorBlue} ${pair.blue.isFuture ? styles.future : ''}`}>
                   {pair.blue.notation}
                 </span>
               )}
               {pair.yellow && (
-                <span class={`${styles.move} ${styles.colorYellow} ${currentMoveIndex() === (pair.moveNum - 1) * 4 + 2 ? styles.current : ''}`}>
+                <span class={`${styles.move} ${styles.colorYellow} ${pair.yellow.isFuture ? styles.future : ''}`}>
                   {pair.yellow.notation}
                 </span>
               )}
               {pair.green && (
-                <span class={`${styles.move} ${styles.colorGreen} ${currentMoveIndex() === (pair.moveNum - 1) * 4 + 3 ? styles.current : ''}`}>
+                <span class={`${styles.move} ${styles.colorGreen} ${pair.green.isFuture ? styles.future : ''}`}>
                   {pair.green.notation}
                 </span>
               )}
