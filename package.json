@@ -1,6 +1,9 @@
 {
   "scripts": {
     "dev": "vike dev",
+    "dev:all": "node dev-start.js",
+    "dev:nats": "./nats-server --addr 0.0.0.0 --port 4222",
+    "dev:bridge": "python3 pv_bridge.py",
     "build": "vike build",
     "preview": "vike build && vike preview",
     "sqlite:migrate": "tsx ./database/sqlite/schema/all.ts",
