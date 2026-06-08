@@ -149,7 +149,7 @@ std::optional<std::tuple<int, std::optional<Move>>> AlphaBetaPlayer::Search(
   num_nodes_++;
 
   if (num_nodes_ < 7'000'000) {
-    if (num_nodes_ == 10'000) {
+    if (num_nodes_ == 20'000 || num_nodes_ == 200'000 || num_nodes_ == 2'000'000) {
       std::cout << "info "
         << "pv "
         << FormatPVLine(thread_state.GetPVInfo())
