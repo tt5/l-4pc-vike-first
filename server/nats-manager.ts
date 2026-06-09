@@ -2,10 +2,11 @@ import { connect, NatsError, NatsConnection } from 'nats';
 
 interface EngineCommand {
   clientId: string;
-  type: "go" | "stop" | "move" | "undo";
+  type: "go" | "stop" | "move" | "undo" | "position";
   data?: {
     depth?: number;
     move?: string;
+    fen?: string;
   };
   timestamp: number;
 }

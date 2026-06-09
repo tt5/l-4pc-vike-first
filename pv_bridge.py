@@ -201,6 +201,23 @@ class PVBridge:
                     print(f"[Bridge] Invalid move format: {move}")
                     await self.send_error_response(client_id, "Invalid move format")
                     
+            elif cmd_type == "position":
+                fen = data.get('fen', 'startpos')
+                print(f"[Bridge] -> position {fen}")
+                self.position = fen
+                self.made_moves[client_id] = []
+                if fen == "startpos":
+                    self.chess.send("position startpos")
+                    self.checkmate.send("position startpos")
+                elif fen.startswith("fen "):
+                    self.chess.send(f"position {fen}")
+                    self.checkmate.send(f"position {fen}")
+                else:
+                    self.chess.send(f"position fen {fen}")
+                    self.checkmate.send(f"position fen {fen}")
+                self.current_pv = []
+                self.oldpv = []
+
             elif cmd_type == "undo":
                 if self.made_moves[client_id]:
                     last_move = self.made_moves[client_id].pop()

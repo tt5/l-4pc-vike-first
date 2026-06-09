@@ -68,7 +68,13 @@ export async function handleEngineConnection(ws: WebSocket) {
             command.data = { move: data.move };
           }
           break;
-          
+
+        case "position":
+          if (data.fen) {
+            command.data = { fen: data.fen };
+          }
+          break;
+
         case "go":
           if (data.depth) {
             command.data = { depth: data.depth };
@@ -102,12 +108,13 @@ export async function handleEngineConnection(ws: WebSocket) {
     clients.delete(ws);
   });
   
-  // Stop any running analysis from a previous session
+  // Reset engine to starting position and stop any running analysis from a previous session
   try {
+    await natsManager.publishCommand({ clientId, type: "position", data: { fen: "startpos" }, timestamp: Date.now() });
     await natsManager.publishCommand({ clientId, type: "stop", timestamp: Date.now() });
-    console.log('[Engine] Sent stop to engine for new connection');
+    console.log('[Engine] Reset engine to startpos + stopped analysis for new connection');
   } catch (error) {
-    console.error('[Engine] Failed to send stop:', error);
+    console.error('[Engine] Failed to reset engine:', error);
   }
 
   // Send ready message
