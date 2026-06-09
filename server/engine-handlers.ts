@@ -102,6 +102,14 @@ export async function handleEngineConnection(ws: WebSocket) {
     clients.delete(ws);
   });
   
+  // Stop any running analysis from a previous session
+  try {
+    await natsManager.publishCommand({ clientId, type: "stop", timestamp: Date.now() });
+    console.log('[Engine] Sent stop to engine for new connection');
+  } catch (error) {
+    console.error('[Engine] Failed to send stop:', error);
+  }
+
   // Send ready message
   ws.send(JSON.stringify({ type: "ready", data: { clientId } }));
 }
