@@ -140,15 +140,7 @@ export default function Page() {
   }
 
   function handleBoardRedo() {
-    console.log('[Board] Go forward');
-    // Notify engine of redo (re-send the move)
-    sendCommand({ type: 'redo' });
-    
-    // Restart analysis if it was running
-    if (isAnalyzing()) {
-      sendCommand({ type: 'stop' });
-      setTimeout(() => sendCommand({ type: 'go' }), 100);
-    }
+    // No engine notification needed — goForward() already replays the stored move client-side
   }
 
   function handleGoBack() {
