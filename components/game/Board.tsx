@@ -21,8 +21,10 @@ interface BoardProps {
   onGameIdChange?: (gameId: string) => void;
   onGameUpdate?: () => void;
   onUndo?: (undoFn: () => void) => void;
+  onRedo?: (redoFn: () => void) => void;
   onMove?: (moveNotation: string) => void;
   onUndoMove?: () => void;
+  onRedoMove?: () => void;
   onTreeChange?: (tree: RoseTree) => void;
   pvLine?: string[];
   isAnalyzing?: boolean;
@@ -93,10 +95,13 @@ const Board: Component<BoardProps> = (props) => {
     // update state
   }, { defer: false }));
 
-  // Expose go back function to parent component
+  // Expose go back / go forward functions to parent component
   onMount(() => {
     if (props.onUndo) {
       props.onUndo(() => goBack());
+    }
+    if (props.onRedo) {
+      props.onRedo(() => goForward());
     }
   });
 
@@ -442,6 +447,112 @@ const Board: Component<BoardProps> = (props) => {
     logTree(moveTree());
   };
 
+  const goForward = () => {
+    const currentTree = moveTree();
+    const currentNode = getCurrentNode(currentTree);
+
+    if (!currentNode || currentNode.children.length === 0) {
+      return; // No children to go forward to
+    }
+
+    // Follow the main line (first child)
+    const childId = currentNode.children[0];
+    const childNode = currentTree.nodes.get(childId);
+    if (!childNode || !childNode.move) {
+      return;
+    }
+
+    const nextMove = childNode.move;
+
+    let treeAfterForward: RoseTree;
+    batch(() => {
+      // Navigate to child node in rose tree
+      setMoveTree(prev => {
+        const newTree = { ...prev };
+        newTree.currentNodeId = childId;
+        treeAfterForward = newTree;
+        return newTree;
+      });
+
+      // Replay the move on the board
+      setPieces(prev => {
+        let newPieces = [...prev];
+
+        // Find the piece at the 'from' position
+        const movingPiece = newPieces.find(p => p.x === nextMove.fromX && p.y === nextMove.fromY);
+        if (!movingPiece) return prev;
+
+        // Handle capture: remove piece at destination
+        if (nextMove.captured) {
+          newPieces = newPieces.filter(p => !(p.x === nextMove.captured!.x && p.y === nextMove.captured!.y));
+        }
+        // Handle en passant: remove captured pawn not at destination
+        if (nextMove.type === 'enpassant' && nextMove.capturedPiece) {
+          newPieces = newPieces.filter(p => !(p.x === nextMove.capturedPiece!.x && p.y === nextMove.capturedPiece!.y));
+        }
+
+        // Move the piece
+        newPieces = newPieces.map(p => {
+          if (p.id !== movingPiece.id) return p;
+
+          const isPromoting = nextMove.type === 'qpromotion';
+          const newPiece = {
+            ...p,
+            x: nextMove.toX,
+            y: nextMove.toY,
+            hasMoved: true,
+            pieceType: isPromoting ? 'queen' : p.pieceType
+          };
+
+          // Handle castling rook move
+          if (nextMove.type === 'kcastle' || nextMove.type === 'qcastle') {
+            const castleType = nextMove.type === 'kcastle' ? 'KING_SIDE' : 'QUEEN_SIDE';
+            const rookMove = getRookMoveForCastle(p.color, castleType);
+            // The rook move will be handled below
+          }
+
+          return newPiece;
+        });
+
+        // Handle castling rook move
+        if (nextMove.type === 'kcastle' || nextMove.type === 'qcastle') {
+          const castleType = nextMove.type === 'kcastle' ? 'KING_SIDE' : 'QUEEN_SIDE';
+          const rookMove = getRookMoveForCastle(movingPiece.color, castleType);
+          newPieces = newPieces.map(p => {
+            if (p.pieceType === 'rook' && p.x === rookMove.fromX && p.y === rookMove.fromY) {
+              return { ...p, x: rookMove.toX, y: rookMove.toY, hasMoved: true };
+            }
+            return p;
+          });
+        }
+
+        return newPieces;
+      });
+
+      // Clear en passant targets (simplified, same as goBack)
+      setEnPassantTargets({
+        'RED': null,
+        'YELLOW': null,
+        'BLUE': null,
+        'GREEN': null
+      });
+    });
+
+    // Notify parent of tree change
+    if (treeAfterForward!) {
+      props.onTreeChange?.(treeAfterForward);
+    }
+
+    // Notify parent component of the move
+    const moveNotation = getMoveNotation(nextMove.fromX, nextMove.fromY, nextMove.toX, nextMove.toY);
+    props.onMove?.(moveNotation);
+
+    // Notify parent of forward action
+    props.onRedoMove?.();
+
+    console.log('[RoseTree] ── Tree after go forward ──');
+    logTree(moveTree());
+  };
 
   return (
     <div class={styles.board}>

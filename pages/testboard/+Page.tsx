@@ -9,6 +9,7 @@ import styles from "./Page.module.css";
 
 export default function Page() {
   let undoFunction: (() => void) | undefined;
+  let redoFunction: (() => void) | undefined;
   let ws: WebSocket | undefined;
 
   // Rose tree for move history display
@@ -138,9 +139,27 @@ export default function Page() {
     }
   }
 
+  function handleBoardRedo() {
+    console.log('[Board] Go forward');
+    // Notify engine of redo (re-send the move)
+    sendCommand({ type: 'redo' });
+    
+    // Restart analysis if it was running
+    if (isAnalyzing()) {
+      sendCommand({ type: 'stop' });
+      setTimeout(() => sendCommand({ type: 'go' }), 100);
+    }
+  }
+
   function handleGoBack() {
     if (undoFunction) {
       undoFunction();
+    }
+  }
+
+  function handleGoForward() {
+    if (redoFunction) {
+      redoFunction();
     }
   }
 
@@ -158,13 +177,15 @@ export default function Page() {
 
   return (
     <div class={styles.page}>
-      <BoardControls isConnected={isConnected()} onGoBack={handleGoBack} />
+      <BoardControls isConnected={isConnected()} onGoBack={handleGoBack} onGoForward={handleGoForward} />
       <div class={styles.mainContent}>
         <div class={styles.boardContainer}>
-          <Board 
+          <Board
             onUndo={(undoFn: () => void) => { undoFunction = undoFn; }}
+            onRedo={(redoFn: () => void) => { redoFunction = redoFn; }}
             onMove={handleBoardMove}
             onUndoMove={handleBoardUndo}
+            onRedoMove={handleBoardRedo}
             onTreeChange={(tree) => { setMoveTree(tree); setTreeVersion(v => v + 1); }}
             pvLine={pvLine()}
             isAnalyzing={isAnalyzing()}
