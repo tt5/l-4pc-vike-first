@@ -10,6 +10,7 @@ import styles from "./Page.module.css";
 export default function Page() {
   let undoFunction: (() => void) | undefined;
   let redoFunction: (() => void) | undefined;
+  let deleteFunction: (() => void) | undefined;
   let ws: WebSocket | undefined;
 
   // Rose tree for move history display
@@ -155,6 +156,12 @@ export default function Page() {
     }
   }
 
+  function handleDelete() {
+    if (deleteFunction) {
+      deleteFunction();
+    }
+  }
+
   function toggleAnalysis() {
     if (!isConnected()) return;
     
@@ -169,12 +176,13 @@ export default function Page() {
 
   return (
     <div class={styles.page}>
-      <BoardControls isConnected={isConnected()} onGoBack={handleGoBack} onGoForward={handleGoForward} />
+      <BoardControls isConnected={isConnected()} onGoBack={handleGoBack} onGoForward={handleGoForward} onDeleteMoves={handleDelete} />
       <div class={styles.mainContent}>
         <div class={styles.boardContainer}>
           <Board
             onUndo={(undoFn: () => void) => { undoFunction = undoFn; }}
             onRedo={(redoFn: () => void) => { redoFunction = redoFn; }}
+            onDelete={(deleteFn: () => void) => { deleteFunction = deleteFn; }}
             onMove={handleBoardMove}
             onUndoMove={handleBoardUndo}
             onRedoMove={handleBoardRedo}

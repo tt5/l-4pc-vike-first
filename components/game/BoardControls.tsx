@@ -5,6 +5,7 @@ interface BoardControlsProps {
   isConnected: boolean;
   onGoBack: () => void;
   onGoForward: () => void;
+  onDeleteMoves: () => void;
 }
 
 const BoardControls: Component<BoardControlsProps> = (props) => {
@@ -19,6 +20,9 @@ const BoardControls: Component<BoardControlsProps> = (props) => {
           Go Forward ▶
         </button>
       </div>
+      <button class={styles.deleteButton} onClick={props.onDeleteMoves} disabled={!props.isConnected}>
+        Delete Moves
+      </button>
       <div class={styles.statusRow}>
         <span class={`${styles.statusDot} ${props.isConnected ? styles.connected : styles.disconnected}`} />
         <span class={styles.statusText}>

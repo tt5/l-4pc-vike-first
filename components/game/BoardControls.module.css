@@ -71,6 +71,30 @@
   cursor: not-allowed;
 }
 
+.deleteButton {
+  padding: 0.5rem 1rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background-color: #d32f2f;
+}
+
+.deleteButton:active:not(:disabled) {
+  background-color: #b71c1c;
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .statusRow {
   display: flex;
   align-items: center;

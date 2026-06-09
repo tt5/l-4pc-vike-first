@@ -25,7 +25,10 @@ interface BoardProps {
   onMove?: (moveNotation: string) => void;
   onUndoMove?: () => void;
   onRedoMove?: () => void;
+  onDelete?: (deleteFn: () => void) => void;
   onTreeChange?: (tree: RoseTree) => void;
+  onSaveState?: (state: BoardState) => void;
+  initialState?: BoardState;
   pvLine?: string[];
   isAnalyzing?: boolean;
 }
@@ -95,13 +98,16 @@ const Board: Component<BoardProps> = (props) => {
     // update state
   }, { defer: false }));
 
-  // Expose go back / go forward functions to parent component
+  // Expose go back / go forward / delete functions to parent component
   onMount(() => {
     if (props.onUndo) {
       props.onUndo(() => goBack());
     }
     if (props.onRedo) {
       props.onRedo(() => goForward());
+    }
+    if (props.onDelete) {
+      props.onDelete(() => deleteFromCurrent());
     }
   });
 
@@ -444,6 +450,86 @@ const Board: Component<BoardProps> = (props) => {
 
     // Log full tree structure after undo
     console.log('[RoseTree] ── Tree after undo ──');
+    logTree(moveTree());
+  };
+
+  const collectDescendants = (tree: RoseTree, nodeId: string): Set<string> => {
+    const result = new Set<string>();
+    const node = tree.nodes.get(nodeId);
+    if (!node) return result;
+    for (const childId of node.children) {
+      result.add(childId);
+      for (const desc of collectDescendants(tree, childId)) {
+        result.add(desc);
+      }
+    }
+    return result;
+  };
+
+  const deleteFromCurrent = () => {
+    const tree = moveTree();
+    const currentNode = getCurrentNode(tree);
+    if (!currentNode || currentNode.parentId === null) return; // can't delete root
+
+    const parentNode = tree.nodes.get(currentNode.parentId);
+    if (!parentNode || !currentNode.move) return;
+
+    const lastMove = currentNode.move;
+
+    // Undo the piece changes (same as goBack)
+    setPieces(prev => {
+      let newPieces = [...prev];
+      const movedPiece = newPieces.find(p => p.x === lastMove.toX && p.y === lastMove.toY);
+      if (movedPiece) {
+        const pieceIndex = newPieces.findIndex(p => p.id === movedPiece.id);
+        newPieces[pieceIndex] = {
+          ...movedPiece,
+          x: lastMove.fromX,
+          y: lastMove.fromY,
+          hasMoved: false,
+          pieceType: lastMove.type === 'qpromotion' ? 'pawn' : movedPiece.pieceType,
+        };
+      }
+      if (lastMove.type === 'kcastle' || lastMove.type === 'qcastle') {
+        const castleType = lastMove.type === 'kcastle' ? 'KING_SIDE' : 'QUEEN_SIDE';
+        const rookMove = getRookMoveForCastle(movedPiece!.color, castleType);
+        const rook = newPieces.find(p => p.x === rookMove.toX && p.y === rookMove.toY && p.pieceType === 'rook');
+        if (rook) {
+          const rookIndex = newPieces.findIndex(p => p.id === rook.id);
+          newPieces[rookIndex] = { ...rook, x: rookMove.fromX, y: rookMove.fromY, hasMoved: false };
+        }
+      }
+      if (lastMove.captured) {
+        newPieces.push(lastMove.captured);
+      }
+      if (lastMove.type === 'enpassant' && lastMove.captured) {
+        newPieces.push(lastMove.captured);
+      }
+      return newPieces;
+    });
+
+    setEnPassantTargets({ 'RED': null, 'YELLOW': null, 'BLUE': null, 'GREEN': null });
+
+    // Collect all descendants of current node
+    const idsToDelete = collectDescendants(tree, currentNode.id);
+    idsToDelete.add(currentNode.id);
+
+    // Remove current node from parent's children
+    parentNode.children = parentNode.children.filter(id => id !== currentNode.id);
+
+    // Remove all deleted nodes from the map
+    for (const id of idsToDelete) {
+      tree.nodes.delete(id);
+    }
+
+    // Navigate to parent
+    tree.currentNodeId = parentNode.id;
+    setMoveTree({ ...tree });
+
+    // Notify engine + parent
+    props.onUndoMove?.();
+    props.onTreeChange?.(tree);
+    console.log('[RoseTree] ── Deleted', idsToDelete.size, 'node(s) from current ──');
     logTree(moveTree());
   };
 
