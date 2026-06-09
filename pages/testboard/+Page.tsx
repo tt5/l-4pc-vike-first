@@ -2,6 +2,7 @@ import { createSignal, createMemo, onMount, onCleanup } from "solid-js";
 import Board from "../../components/game/Board";
 import EngineAnalysis from "../../components/game/EngineAnalysis";
 import MoveHistory from "../../components/game/MoveHistory";
+import BoardControls from "../../components/game/BoardControls";
 import type { RoseTree } from "../../types/board";
 import { createRoseTree } from "../../utils/roseTree";
 import styles from "./Page.module.css";
@@ -157,15 +158,7 @@ export default function Page() {
 
   return (
     <div class={styles.page}>
-      <div class={styles.controlsContainer}>
-        <h2>Board Controls</h2>
-        <button class={styles.undoButton} onClick={handleGoBack}>
-          Go Back
-        </button>
-        <div class={styles.connectionStatus}>
-          Engine: {isConnected() ? 'Connected' : 'Disconnected'}
-        </div>
-      </div>
+      <BoardControls isConnected={isConnected()} onGoBack={handleGoBack} />
       <div class={styles.mainContent}>
         <div class={styles.boardContainer}>
           <Board 

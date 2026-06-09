@@ -1,0 +1,67 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  width: 8rem;
+  flex-shrink: 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.undoButton {
+  padding: 0.5rem 1rem;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.undoButton:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.undoButton:active:not(:disabled) {
+  background-color: #1565c0;
+}
+
+.undoButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDot.connected {
+  background-color: #4caf50;
+}
+
+.statusDot.disconnected {
+  background-color: #f44336;
+}
+
+.statusText {
+  color: #666;
+}
