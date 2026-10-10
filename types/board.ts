@@ -27,6 +27,17 @@ export interface Piece {
 
 type MoveType = 'normal' | 'capture' | 'kcastle' | 'qcastle' | 'enpassant' | 'qpromotion'
 
+export interface BoardState {
+  pieces: Piece[];
+  fen: string;
+  moveTree: RoseTree;
+  hoveredCell: Point | null;
+  pickedUpPiece: Piece | null;
+  legalMoves: LegalMove[];
+  enPassantTargets: Record<NamedColor, { x: number, y: number, color: NamedColor } | null>;
+  isDragging: boolean;
+}
+
 export interface Move {
   type: MoveType;
   fromX: number;

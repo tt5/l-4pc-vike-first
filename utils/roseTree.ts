@@ -161,7 +161,7 @@ export function getMoveHistory(tree: RoseTree): Move[] {
       history.unshift(node.move);
     }
 
-    currentNodeId = node.parentId;
+    currentNodeId = node.parentId!;
   }
 
   return history;

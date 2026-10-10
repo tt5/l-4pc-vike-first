@@ -12,7 +12,7 @@ import {
 import { GridCell } from './GridCell';
 
 import styles from './Board.module.css';
-import { createPoint, NamedColor, Piece, Point, LegalMove, Move, RoseTree } from '../../types/board';
+import { createPoint, NamedColor, Piece, Point, LegalMove, Move, RoseTree, BoardState } from '../../types/board';
 import { PLAYER_COLORS, getColorHex, parseFen, isInNonPlayableCorner, getLegalMoves } from '../../utils/game';
 import { createRoseTree, addMove, navigateToParent, getCurrentNode, getMoveHistory, logTree } from '../../utils/roseTree';
 
@@ -573,8 +573,8 @@ const Board: Component<BoardProps> = (props) => {
           newPieces = newPieces.filter(p => !(p.x === nextMove.captured!.x && p.y === nextMove.captured!.y));
         }
         // Handle en passant: remove captured pawn not at destination
-        if (nextMove.type === 'enpassant' && nextMove.capturedPiece) {
-          newPieces = newPieces.filter(p => !(p.x === nextMove.capturedPiece!.x && p.y === nextMove.capturedPiece!.y));
+        if (nextMove.type === 'enpassant' && nextMove.captured) {
+          newPieces = newPieces.filter(p => !(p.x === nextMove.captured!.x && p.y === nextMove.captured!.y));
         }
 
         // Move the piece
