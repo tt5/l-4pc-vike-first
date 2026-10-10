@@ -155,3 +155,5 @@ sqlite.db
 nats-server
 
 __pycache__
+
+sqlite.db

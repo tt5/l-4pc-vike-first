@@ -43,3 +43,10 @@ npm run dev
 ```
 
 > **Note:** `npm run dev` alone is sufficient for pages that don't use the chess engine (e.g. `/login`, `/register`, `/dashboard`). The `/testboard` page requires all three services.
+
+## Production notes
+
+- `npm run build && npm run prod` starts the Vike/Fastify server from `dist/server/index.mjs`.
+- The `/ws/engine` WebSocket route is currently attached only in **development** by `vite-engine-plugin.ts`, because it hooks into Vite's dev HTTP server upgrade path.
+- In **production**, the Fastify server does not expose `/ws/engine`, and `pv_bridge.py` / `nats-server` are not started automatically.
+- If you need `/testboard` in production, move the `/ws/engine` upgrade handler and engine process management into the Fastify server layer.
